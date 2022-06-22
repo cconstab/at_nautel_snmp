@@ -19,11 +19,13 @@ import 'package:at_nautel_snmp/check_file_exists.dart';
 
 void main(List<String> args) async {
   String ip;
+  InternetAddress sourceIp;
   String name;
   String nameSpace = 'kryz_9850';
-  String publicKey;
+  String deviceName;
   String frequency;
   Transmitter nautel;
+  Snmp session;
   InternetAddress target;
   final AtSignLogger _logger = AtSignLogger(' nautel ');
   _logger.hierarchicalLoggingEnabled = true;
@@ -35,9 +37,11 @@ void main(List<String> args) async {
       abbr: 'k', mandatory: false, help: 'transmitters @sign\'s atKeys file if not in ~/.atsign/keys/');
   parser.addOption('transmitter-atsign', abbr: 't', mandatory: true, help: 'Transmitters @sign');
   parser.addOption('receiver-atsign', abbr: 'r', mandatory: true, help: 'Send a notification to this @sign');
-  parser.addOption('public-location', abbr: 'p', mandatory: true, help: 'public FQ @address to publish results');
+  // parser.addOption('device-name', abbr: 'n', mandatory: true, help: 'Device name, used as AtKey:key');
   parser.addOption('name', abbr: 'n', mandatory: true, help: 'Radio Transmitter name');
   parser.addOption('ip-address', abbr: 'i', mandatory: true, help: 'IP address of transmitter');
+  parser.addOption('source-ip-address',
+      abbr: 's', mandatory: false, defaultsTo: '0.0.0.0', help: 'Source IP address of SNMP');
   parser.addOption('frequency', abbr: 'f', mandatory: true, help: 'Frequency of transmitter');
   parser.addFlag('verbose', abbr: 'v', help: 'More logging');
 
@@ -57,8 +61,9 @@ void main(List<String> args) async {
     fromAtsign = results['transmitter-atsign'];
     toAtsign = results['receiver-atsign'];
     ip = results['ip-address'];
+    sourceIp = InternetAddress(results['source-ip-address']);
     frequency = results['frequency'];
-    publicKey = results['public-location'];
+    deviceName = results['name'];
     nautel = Transmitter(stationName: name, frequency: frequency, ip: ip);
     target = InternetAddress(ip);
 
@@ -123,11 +128,11 @@ void main(List<String> args) async {
   while (!syncComplete) {
     await Future.delayed(Duration(milliseconds: 100));
   }
-
   while (true) {
     try {
-      var session = await Snmp.createSession(target);
-      await mainloop(nautel, session, atClient, fromAtsign, toAtsign, publicKey);
+      session = await Snmp.createSession(target, sourceAddress: sourceIp);
+      await mainloop(_logger, nautel, session, atClient, notificationService, fromAtsign, toAtsign, deviceName);
+      session.close();
     } catch (e) {
       print(e);
     }
@@ -136,37 +141,70 @@ void main(List<String> args) async {
   }
 }
 
-Future<void> mainloop(nautel, session, atClient, fromAtsign, toAtsign, publicKey) async {
+Future<void> mainloop(AtSignLogger _logger, Transmitter nautel, Snmp session, AtClient atClient,
+    NotificationService notificationService, String fromAtsign, String toAtsign, String deviceName) async {
   while (true) {
     nautel = await getOID(session, nautel);
     var t = nautel.toJson();
     var ts = (json.encode(t));
-    await updateAtsign(ts, atClient, fromAtsign, toAtsign, publicKey);
+    await updatePublicAtsign(_logger, ts, atClient, fromAtsign, toAtsign, deviceName);
+    await updatePrivateAtsign(_logger, ts, atClient, notificationService, fromAtsign, toAtsign, deviceName);
     await Future.delayed(Duration(seconds: 1));
   }
 }
 
-Future<void> updateAtsign(json, atClient, fromAtsign, toAtsign, publicKey) async {
+Future<void> updatePublicAtsign(
+    AtSignLogger _logger, String json, AtClient atClient, String fromAtsign, String toAtsign, String deviceName) async {
   var metaData = Metadata()
     ..isPublic = true
     ..isEncrypted = false
     ..namespaceAware = true
-    ..isHidden = true
+    // Is hidden not working in SDK as yet
+    // Will hide this public AtKey once available
+    //..isHidden = true
     ..ttr = -1
-    ..ttl = 10000;
+    // Keep the key in place for 20 seconds
+    ..ttl = 20000;
 
   var atKey = AtKey()
-    ..key = publicKey
-    ..namespace = atClient!.getPreferences()?.namespace
+    ..key = deviceName
+    ..namespace = atClient.getPreferences()?.namespace
     ..sharedBy = fromAtsign
     ..metadata = metaData;
 
-  atClient.getPreferences();
+  // atClient.getPreferences();
 
   print(atKey.toString());
-  print(atClient!.getPreferences()?.namespace);
+  print(atClient.getPreferences()?.namespace);
 
   await atClient.put(atKey, json);
   var b = await atClient.get(atKey);
   print(b.toString());
+}
+
+Future<void> updatePrivateAtsign(AtSignLogger _logger, String json, AtClient atClient,
+    NotificationService notificationService, String fromAtsign, String toAtsign, String deviceName) async {
+  var metaData = Metadata()
+    ..isPublic = false
+    ..isEncrypted = true
+    ..namespaceAware = true
+    ..ttr = -1
+    ..ttl = 1000;
+
+  var key = AtKey()
+    ..key = deviceName
+    ..sharedBy = fromAtsign
+    ..sharedWith = toAtsign
+    ..namespace = atClient.getPreferences()?.namespace
+    ..metadata = metaData;
+
+  try {
+    await notificationService.notify(NotificationParams.forUpdate(key, value: json), onSuccess: (notification) {
+      _logger.info('SUCCESS:' + notification.toString());
+    }, onError: (notification) {
+      _logger.info('ERROR:' + notification.toString());
+    });
+  } catch (e) {
+    print(e.toString());
+  }
 }
