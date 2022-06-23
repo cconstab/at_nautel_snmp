@@ -9,9 +9,7 @@ import 'package:logging/src/level.dart';
 // @platform packages
 import 'package:at_client/at_client.dart';
 import 'package:at_utils/at_logger.dart';
-import 'package:at_commons/at_commons.dart';
 import 'package:at_onboarding_cli/at_onboarding_cli.dart';
-
 import 'package:at_nautel_snmp/models/transmitter_model.dart';
 import 'package:at_nautel_snmp/snmp_get_nautel.dart';
 import 'package:at_nautel_snmp/home_directory.dart';
@@ -108,8 +106,6 @@ void main(List<String> args) async {
 
   var atClient = await onboardingService.getAtClient();
 
-  print(atClient!.getPreferences()?.namespace);
-
   AtClientManager atClientManager = AtClientManager.getInstance();
 
   NotificationService notificationService = atClientManager.notificationService;
@@ -131,12 +127,12 @@ void main(List<String> args) async {
   while (true) {
     try {
       session = await Snmp.createSession(target, sourceAddress: sourceIp);
-      await mainloop(_logger, nautel, session, atClient, notificationService, fromAtsign, toAtsign, deviceName);
+      await mainloop(_logger, nautel, session, atClient!, notificationService, fromAtsign, toAtsign, deviceName);
       session.close();
     } catch (e) {
-      print(e);
+      _logger.severe(e);
     }
-    print("error staring retry in 5 Seconds");
+    _logger.severe(" SNMP error  retry in 5 Seconds");
     await Future.delayed(Duration(seconds: 5));
   }
 }
@@ -174,12 +170,11 @@ Future<void> updatePublicAtsign(
 
   // atClient.getPreferences();
 
-  print(atKey.toString());
-  print(atClient.getPreferences()?.namespace);
+  _logger.info(atKey.toString());
 
   await atClient.put(atKey, json);
   var b = await atClient.get(atKey);
-  print(b.toString());
+  _logger.info(b.toString());
 }
 
 Future<void> updatePrivateAtsign(AtSignLogger _logger, String json, AtClient atClient,
@@ -205,6 +200,6 @@ Future<void> updatePrivateAtsign(AtSignLogger _logger, String json, AtClient atC
       _logger.info('ERROR:' + notification.toString());
     });
   } catch (e) {
-    print(e.toString());
+    _logger.severe(e.toString());
   }
 }

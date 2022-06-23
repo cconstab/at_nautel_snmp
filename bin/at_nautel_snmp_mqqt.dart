@@ -149,6 +149,11 @@ void main(List<String> args) async {
   mqttSession.setProtocolV311();
   mqttSession.keepAlivePeriod = 20;
   mqttSession.autoReconnect = true;
+  // Pong Callback
+    void pong() {
+      _logger.info('Mosquitto Ping response client callback invoked');
+  pongCount++;
+  }
   mqttSession.pongCallback = pong;
 
   // await mqttSession.connect(mqttUsername, 'KRYZ');
@@ -164,7 +169,7 @@ void main(List<String> args) async {
       .startClean() // Non persistent session for testing
       .authenticateAs(mqttUsername, '')
       .withWillQos(MqttQos.atLeastOnce);
-  print('EXAMPLE::Mosquitto client connecting....');
+  _logger.info('Mosquitto client connecting....');
   mqttSession.connectionMessage = connMess;
 
   /// Connect the client, any errors here are communicated by raising of the appropriate exception. Note
@@ -174,28 +179,28 @@ void main(List<String> args) async {
     await mqttSession.connect();
   } on NoConnectionException catch (e) {
     // Raised by the client when connection fails.
-    print('EXAMPLE::client exception - $e');
+    _logger.severe(' Mosquitto client exception - $e');
     mqttSession.disconnect();
   } on SocketException catch (e) {
     // Raised by the socket layer
-    print('EXAMPLE::socket exception - $e');
+    _logger.severe(' Mosquitto socket exception - $e');
     mqttSession.disconnect();
   }
 
   /// Check we are connected
   if (mqttSession.connectionStatus!.state == MqttConnectionState.connected) {
-    print('EXAMPLE::Mosquitto client connected');
+    _logger.info(' Mosquitto client connected');
   } else {
     /// Use status here rather than state if you also want the broker return code.
-    print(
-        'EXAMPLE::ERROR Mosquitto client connection failed - disconnecting, status is ${mqttSession.connectionStatus}');
+    _logger
+        .severe(' Mosquitto client connection failed - disconnecting, status is ${mqttSession.connectionStatus}');
     mqttSession.disconnect();
     exit(-1);
   }
 
   notificationService.subscribe(regex: '$deviceName.$nameSpace@', shouldDecrypt: true).listen(((notification) async {
     String keyAtsign = notification.key;
-    Uint8List buffer;
+    //Uint8List buffer;
     keyAtsign = keyAtsign.replaceAll(notification.to + ':', '');
     keyAtsign = keyAtsign.replaceAll('.' + nameSpace + notification.from, '');
     if (keyAtsign == deviceName) {
@@ -205,7 +210,7 @@ void main(List<String> args) async {
       await mqttSession.connect();
 
       if (mqttSession.connectionStatus!.state == MqttConnectionState.connected) {
-        print('EXAMPLE::Mosquitto client connected sending message');
+        _logger.info('Mosquitto client connected sending message');
         mqttSession.publishMessage(mqttTopic, MqttQos.atMostOnce, builder.addString(json).payload!, retain: false);
         builder.clear();
       } else {
@@ -215,10 +220,8 @@ void main(List<String> args) async {
   }),
       onError: (e) => _logger.severe('Notification Failed:' + e.toString()),
       onDone: () => _logger.info('Notification listener stopped'));
+
+
 }
 
-/// Pong callback
-void pong() {
-  print('EXAMPLE::Ping response client callback invoked');
-  pongCount++;
-}
+
