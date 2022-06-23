@@ -140,7 +140,7 @@ void main(List<String> args) async {
 Future<void> mainloop(AtSignLogger _logger, Transmitter nautel, Snmp session, AtClient atClient,
     NotificationService notificationService, String fromAtsign, String toAtsign, String deviceName) async {
   while (true) {
-    nautel = await getOID(session, nautel);
+    nautel = await getOID(session, nautel, _logger);
     var t = nautel.toJson();
     var ts = (json.encode(t));
     await updatePublicAtsign(_logger, ts, atClient, fromAtsign, toAtsign, deviceName);
