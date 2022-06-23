@@ -104,7 +104,7 @@ void main(List<String> args) async {
 
   await onboardingService.authenticate();
 
-  var atClient = await onboardingService.getAtClient();
+  AtClient? atClient = await onboardingService.getAtClient();
 
   AtClientManager atClientManager = AtClientManager.getInstance();
 
