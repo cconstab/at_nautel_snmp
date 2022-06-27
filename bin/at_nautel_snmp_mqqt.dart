@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'dart:convert';
 import 'dart:typed_data';
+import 'dart:async';
+
 
 // external packages
 import 'package:args/args.dart';
@@ -11,17 +13,27 @@ import 'package:mqtt_client/mqtt_server_client.dart';
 // @platform packages
 import 'package:at_client/at_client.dart';
 import 'package:at_utils/at_logger.dart';
-import 'package:at_commons/at_commons.dart';
 import 'package:at_onboarding_cli/at_onboarding_cli.dart';
 
 import 'package:at_nautel_snmp/home_directory.dart';
 import 'package:at_nautel_snmp/check_file_exists.dart';
-import 'package:mqtt_client/mqtt_server_client.dart';
 
 var pongCount = 0; // Pong counter
 var mqttSession = MqttServerClient('test.mosquitto.org', '');
 
 void main(List<String> args) async {
+        //starting secondary in a zone
+    var logger = AtSignLogger('atNautel reciever ');
+      runZonedGuarded(() async {
+        await snmpMqtt(args);
+      }, (error, stackTrace) {
+        logger.severe('Uncaught error: $error');
+        logger.severe(stackTrace.toString());
+      });
+    }
+
+
+Future <void> snmpMqtt(List<String> args) async {
   InternetAddress sourceIp;
   String mqttIP;
   String mqttTopic;

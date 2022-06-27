@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:convert';
+import 'dart:async';
 
 // external packages
 import 'package:args/args.dart';
@@ -16,6 +17,17 @@ import 'package:at_nautel_snmp/home_directory.dart';
 import 'package:at_nautel_snmp/check_file_exists.dart';
 
 void main(List<String> args) async {
+  //starting secondary in a zone
+  var logger = AtSignLogger('atNautel sender ');
+  runZonedGuarded(() async {
+    await snmp(args);
+  }, (error, stackTrace) {
+    logger.severe('Uncaught error: $error');
+    logger.severe(stackTrace.toString());
+  });
+}
+
+Future<void> snmp(List<String> args) async {
   String ip;
   InternetAddress sourceIp;
   String name;
@@ -23,7 +35,6 @@ void main(List<String> args) async {
   String deviceName;
   String frequency;
   Transmitter nautel;
-  Snmp session;
   InternetAddress target;
   final AtSignLogger _logger = AtSignLogger(' nautel ');
   _logger.hierarchicalLoggingEnabled = true;
@@ -124,16 +135,25 @@ void main(List<String> args) async {
   while (!syncComplete) {
     await Future.delayed(Duration(milliseconds: 100));
   }
+  late Snmp session;
+  bool sessionBool = false;
   while (true) {
     try {
       session = await Snmp.createSession(target, sourceAddress: sourceIp);
-      await mainloop(_logger, nautel, session, atClient!, notificationService, fromAtsign, toAtsign, deviceName);
-      session.close();
+      sessionBool = true;
+      session.retries = 5;
+
+        await mainloop(_logger, nautel, session, atClient!, notificationService, fromAtsign, toAtsign, deviceName);
+
     } catch (e) {
       _logger.severe(e);
     }
+    if (sessionBool) {
+      session.close();
+    }
     _logger.severe(" SNMP error  retry in 5 Seconds");
     await Future.delayed(Duration(seconds: 5));
+    sessionBool = false;
   }
 }
 
@@ -184,7 +204,7 @@ Future<void> updatePrivateAtsign(AtSignLogger _logger, String json, AtClient atC
     ..isEncrypted = true
     ..namespaceAware = true
     ..ttr = -1
-    ..ttl = 1000;
+    ..ttl = 10000;
 
   var key = AtKey()
     ..key = deviceName
