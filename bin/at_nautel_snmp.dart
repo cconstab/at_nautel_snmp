@@ -143,8 +143,7 @@ Future<void> snmp(List<String> args) async {
       sessionBool = true;
       session.retries = 5;
 
-        await mainloop(_logger, nautel, session, atClient!, notificationService, fromAtsign, toAtsign, deviceName);
-
+      await mainloop(_logger, nautel, session, atClient!, notificationService, fromAtsign, toAtsign, deviceName);
     } catch (e) {
       _logger.severe(e);
     }
