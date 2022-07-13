@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:async';
 
-
 // external packages
 import 'package:args/args.dart';
 import 'package:logging/src/level.dart';
@@ -22,18 +21,17 @@ var pongCount = 0; // Pong counter
 var mqttSession = MqttServerClient('test.mosquitto.org', '');
 
 void main(List<String> args) async {
-        //starting secondary in a zone
-    var logger = AtSignLogger('atNautel reciever ');
-      runZonedGuarded(() async {
-        await snmpMqtt(args);
-      }, (error, stackTrace) {
-        logger.severe('Uncaught error: $error');
-        logger.severe(stackTrace.toString());
-      });
-    }
+  //starting secondary in a zone
+  var logger = AtSignLogger('atNautel reciever ');
+  runZonedGuarded(() async {
+    await snmpMqtt(args);
+  }, (error, stackTrace) {
+    logger.severe('Uncaught error: $error');
+    logger.severe(stackTrace.toString());
+  });
+}
 
-
-Future <void> snmpMqtt(List<String> args) async {
+Future<void> snmpMqtt(List<String> args) async {
   InternetAddress sourceIp;
   String mqttIP;
   String mqttTopic;
@@ -77,7 +75,8 @@ Future <void> snmpMqtt(List<String> args) async {
     mqttTopic = results['mqtt-topic'];
     deviceName = results['device-name'];
 
-    target = InternetAddress(mqttIP);
+    var targetlist = await InternetAddress.lookup(mqttIP);
+    target = targetlist[0];
 
     if (results['key-file'] != null) {
       atsignFile = results['key-file'];
@@ -159,13 +158,16 @@ Future <void> snmpMqtt(List<String> args) async {
   final builder = MqttClientPayloadBuilder();
 
   mqttSession.setProtocolV311();
+  mqttSession.port = 8883;
   mqttSession.keepAlivePeriod = 20;
   mqttSession.autoReconnect = true;
+  mqttSession.secure = true;
   // Pong Callback
-    void pong() {
-      _logger.info('Mosquitto Ping response client callback invoked');
-  pongCount++;
+  void pong() {
+    _logger.info('Mosquitto Ping response client callback invoked');
+    pongCount++;
   }
+
   mqttSession.pongCallback = pong;
 
   // await mqttSession.connect(mqttUsername, 'KRYZ');
@@ -179,7 +181,9 @@ Future <void> snmpMqtt(List<String> args) async {
       // .withWillTopic('willtopic') // If you set this you must set a will message
       // .withWillMessage('My Will message')
       .startClean() // Non persistent session for testing
-      .authenticateAs(mqttUsername, '')
+      //.authenticateAs(mqttUsername, '')
+      .authenticateAs("kryz.azure-devices.net/kryz-xmtr/?api-version=2021-04-12",
+          'SharedAccessSignature sr=kryz.azure-devices.net%2Fdevices%2Fkryz-xmtr&sig=IpitcdOVZQBfuB3GTBR%2FWv9mqIE%2BgHgr32P39nMaRHY%3D&se=1657677181')
       .withWillQos(MqttQos.atLeastOnce);
   _logger.info('Mosquitto client connecting....');
   mqttSession.connectionMessage = connMess;
@@ -204,8 +208,7 @@ Future <void> snmpMqtt(List<String> args) async {
     _logger.info(' Mosquitto client connected');
   } else {
     /// Use status here rather than state if you also want the broker return code.
-    _logger
-        .severe(' Mosquitto client connection failed - disconnecting, status is ${mqttSession.connectionStatus}');
+    _logger.severe(' Mosquitto client connection failed - disconnecting, status is ${mqttSession.connectionStatus}');
     mqttSession.disconnect();
     exit(-1);
   }
@@ -232,8 +235,4 @@ Future <void> snmpMqtt(List<String> args) async {
   }),
       onError: (e) => _logger.severe('Notification Failed:' + e.toString()),
       onDone: () => _logger.info('Notification listener stopped'));
-
-
 }
-
-
