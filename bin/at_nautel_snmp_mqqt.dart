@@ -76,8 +76,9 @@ Future <void> snmpMqtt(List<String> args) async {
     sourceIp = InternetAddress(results['source-ip-address']);
     mqttTopic = results['mqtt-topic'];
     deviceName = results['device-name'];
-
-    target = InternetAddress(mqttIP);
+    
+    var targetlist = await InternetAddress.lookup(mqttIP);
+    target = targetlist[0];
 
     if (results['key-file'] != null) {
       atsignFile = results['key-file'];
