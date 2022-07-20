@@ -177,9 +177,9 @@ Future<void> updatePublicAtsign(
     // Is hidden not working in SDK as yet
     // Will hide this public AtKey once available
     //..isHidden = true
-    ..ttr = -1
-    // Keep the key in place for 20 seconds
-    ..ttl = 20000;
+    ..ttr = -1;
+  // Keep the key in place for 20 seconds
+  //..ttl = 20000;
 
   var atKey = AtKey()
     ..key = deviceName
