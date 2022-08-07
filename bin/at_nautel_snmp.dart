@@ -43,15 +43,25 @@ Future<void> snmp(List<String> args) async {
   var parser = ArgParser();
 // Args
   parser.addOption('key-file',
-      abbr: 'k', mandatory: false, help: 'transmitters @sign\'s atKeys file if not in ~/.atsign/keys/');
-  parser.addOption('transmitter-atsign', abbr: 't', mandatory: true, help: 'Transmitters @sign');
-  parser.addOption('receiver-atsign', abbr: 'r', mandatory: true, help: 'Send a notification to this @sign');
+      abbr: 'k',
+      mandatory: false,
+      help: 'transmitters @sign\'s atKeys file if not in ~/.atsign/keys/');
+  parser.addOption('transmitter-atsign',
+      abbr: 't', mandatory: true, help: 'Transmitters @sign');
+  parser.addOption('receiver-atsign',
+      abbr: 'r', mandatory: true, help: 'Send a notification to this @sign');
   // parser.addOption('device-name', abbr: 'n', mandatory: true, help: 'Device name, used as AtKey:key');
-  parser.addOption('name', abbr: 'n', mandatory: true, help: 'Radio Transmitter name');
-  parser.addOption('ip-address', abbr: 'i', mandatory: true, help: 'IP address of transmitter');
+  parser.addOption('name',
+      abbr: 'n', mandatory: true, help: 'Radio Transmitter name');
+  parser.addOption('ip-address',
+      abbr: 'i', mandatory: true, help: 'IP address of transmitter');
   parser.addOption('source-ip-address',
-      abbr: 's', mandatory: false, defaultsTo: '0.0.0.0', help: 'Source IP address of SNMP');
-  parser.addOption('frequency', abbr: 'f', mandatory: true, help: 'Frequency of transmitter');
+      abbr: 's',
+      mandatory: false,
+      defaultsTo: '0.0.0.0',
+      help: 'Source IP address of SNMP');
+  parser.addOption('frequency',
+      abbr: 'f', mandatory: true, help: 'Frequency of transmitter');
   parser.addFlag('verbose', abbr: 'v', help: 'More logging');
 
   // Check the arguments
@@ -111,7 +121,8 @@ Future<void> snmp(List<String> args) async {
     //..cramSecret = '<your cram secret>';
     ..atKeysFilePath = atsignFile;
 
-  AtOnboardingService onboardingService = AtOnboardingServiceImpl(fromAtsign, atOnboardingConfig);
+  AtOnboardingService onboardingService =
+      AtOnboardingServiceImpl(fromAtsign, atOnboardingConfig);
 
   await onboardingService.authenticate();
 
@@ -143,7 +154,8 @@ Future<void> snmp(List<String> args) async {
       sessionBool = true;
       session.retries = 5;
 
-      await mainloop(_logger, nautel, session, atClient!, notificationService, fromAtsign, toAtsign, deviceName);
+      await mainloop(_logger, nautel, session, atClient!, notificationService,
+          fromAtsign, toAtsign, deviceName);
     } catch (e) {
       _logger.severe(e);
     }
@@ -156,20 +168,34 @@ Future<void> snmp(List<String> args) async {
   }
 }
 
-Future<void> mainloop(AtSignLogger _logger, Transmitter nautel, Snmp session, AtClient atClient,
-    NotificationService notificationService, String fromAtsign, String toAtsign, String deviceName) async {
+Future<void> mainloop(
+    AtSignLogger _logger,
+    Transmitter nautel,
+    Snmp session,
+    AtClient atClient,
+    NotificationService notificationService,
+    String fromAtsign,
+    String toAtsign,
+    String deviceName) async {
+  int counter = 0;
   while (true) {
     nautel = await getOID(session, nautel, _logger);
     var t = nautel.toJson();
     var ts = (json.encode(t));
     updatePublicAtsign(_logger, ts, atClient, fromAtsign, toAtsign, deviceName);
-    updatePrivateAtsign(_logger, ts, atClient, notificationService, fromAtsign, toAtsign, deviceName);
+    counter++;
+    // only update the public side once in a while
+    if (counter == 15) {
+      updatePrivateAtsign(_logger, ts, atClient, notificationService,
+          fromAtsign, toAtsign, deviceName);
+      counter = 0;
+    }
     await Future.delayed(Duration(seconds: 1));
   }
 }
 
-void updatePublicAtsign(
-    AtSignLogger _logger, String json, AtClient atClient, String fromAtsign, String toAtsign, String deviceName) async {
+void updatePublicAtsign(AtSignLogger _logger, String json, AtClient atClient,
+    String fromAtsign, String toAtsign, String deviceName) async {
   var metaData = Metadata()
     ..isPublic = true
     ..isEncrypted = false
@@ -196,8 +222,14 @@ void updatePublicAtsign(
   _logger.info(b.toString());
 }
 
-void updatePrivateAtsign(AtSignLogger _logger, String json, AtClient atClient,
-    NotificationService notificationService, String fromAtsign, String toAtsign, String deviceName) async {
+void updatePrivateAtsign(
+    AtSignLogger _logger,
+    String json,
+    AtClient atClient,
+    NotificationService notificationService,
+    String fromAtsign,
+    String toAtsign,
+    String deviceName) async {
   var metaData = Metadata()
     ..isPublic = false
     ..isEncrypted = true
@@ -213,7 +245,9 @@ void updatePrivateAtsign(AtSignLogger _logger, String json, AtClient atClient,
     ..metadata = metaData;
 
   try {
-    await notificationService.notify(NotificationParams.forUpdate(key, value: json), onSuccess: (notification) {
+    await notificationService
+        .notify(NotificationParams.forUpdate(key, value: json),
+            onSuccess: (notification) {
       _logger.info('SUCCESS:' + notification.toString());
     }, onError: (notification) {
       _logger.info('ERROR:' + notification.toString());
