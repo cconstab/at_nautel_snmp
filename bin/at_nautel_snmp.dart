@@ -182,14 +182,14 @@ Future<void> mainloop(
     nautel = await getOID(session, nautel, _logger);
     var t = nautel.toJson();
     var ts = (json.encode(t));
+    if (counter == 15) {
     updatePublicAtsign(_logger, ts, atClient, fromAtsign, toAtsign, deviceName);
+    counter = 0;
+    }
     counter++;
     // only update the public side once in a while
-    if (counter == 15) {
       updatePrivateAtsign(_logger, ts, atClient, notificationService,
           fromAtsign, toAtsign, deviceName);
-      counter = 0;
-    }
     await Future.delayed(Duration(seconds: 1));
   }
 }
