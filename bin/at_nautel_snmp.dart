@@ -191,7 +191,7 @@ void updatePublicAtsign(
 
   _logger.info(atKey.toString());
 
-  await atClient.put(atKey, json);
+  atClient.put(atKey, json);
   var b = await atClient.get(atKey);
   _logger.info(b.toString());
 }
