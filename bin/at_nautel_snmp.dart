@@ -162,13 +162,13 @@ Future<void> mainloop(AtSignLogger _logger, Transmitter nautel, Snmp session, At
     nautel = await getOID(session, nautel, _logger);
     var t = nautel.toJson();
     var ts = (json.encode(t));
-    await updatePublicAtsign(_logger, ts, atClient, fromAtsign, toAtsign, deviceName);
-    await updatePrivateAtsign(_logger, ts, atClient, notificationService, fromAtsign, toAtsign, deviceName);
+    updatePublicAtsign(_logger, ts, atClient, fromAtsign, toAtsign, deviceName);
+    updatePrivateAtsign(_logger, ts, atClient, notificationService, fromAtsign, toAtsign, deviceName);
     await Future.delayed(Duration(seconds: 1));
   }
 }
 
-Future<void> updatePublicAtsign(
+void updatePublicAtsign(
     AtSignLogger _logger, String json, AtClient atClient, String fromAtsign, String toAtsign, String deviceName) async {
   var metaData = Metadata()
     ..isPublic = true
@@ -196,7 +196,7 @@ Future<void> updatePublicAtsign(
   _logger.info(b.toString());
 }
 
-Future<void> updatePrivateAtsign(AtSignLogger _logger, String json, AtClient atClient,
+void updatePrivateAtsign(AtSignLogger _logger, String json, AtClient atClient,
     NotificationService notificationService, String fromAtsign, String toAtsign, String deviceName) async {
   var metaData = Metadata()
     ..isPublic = false
