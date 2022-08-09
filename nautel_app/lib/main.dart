@@ -6,9 +6,11 @@ import 'package:at_onboarding_flutter/at_onboarding_flutter.dart' show Onboardin
 import 'package:at_utils/at_logger.dart' show AtSignLogger;
 import 'package:flutter/material.dart';
 import 'package:nautel_app/screens/onboarding_screen.dart';
-import 'package:path_provider/path_provider.dart' show getApplicationSupportDirectory;
-
 import 'screens/home_screen.dart';
+
+import 'package:path_provider/path_provider.dart' show getApplicationSupportDirectory;
+import 'package:window_manager/window_manager.dart';
+
 
 final AtSignLogger _logger = AtSignLogger(AtEnv.appNamespace);
 
@@ -20,6 +22,24 @@ Future<void> main() async {
   } catch (e) {
     _logger.finer('Environment failed to load from .env: ', e);
   }
+  WidgetsFlutterBinding.ensureInitialized();
+  // Must add this line.
+  await windowManager.ensureInitialized();
+
+  WindowOptions windowOptions = const WindowOptions(
+    size: Size(425, 720),
+    maximumSize: Size(425,720),
+    minimumSize: Size(425,720),
+    center: true,
+    backgroundColor: Colors.transparent,
+    skipTaskbar: false,
+    titleBarStyle: TitleBarStyle.normal,
+  );
+    windowManager.waitUntilReadyToShow(windowOptions, () async {
+    await windowManager.show();
+    await windowManager.focus();
+  });
+
   runApp(const MyApp());
 }
 
