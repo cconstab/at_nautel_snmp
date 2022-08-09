@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:at_app_flutter/at_app_flutter.dart' show AtEnv;
 import 'package:at_client_mobile/at_client_mobile.dart';
@@ -10,7 +11,6 @@ import 'screens/home_screen.dart';
 
 import 'package:path_provider/path_provider.dart' show getApplicationSupportDirectory;
 import 'package:window_manager/window_manager.dart';
-
 
 final AtSignLogger _logger = AtSignLogger(AtEnv.appNamespace);
 
@@ -24,21 +24,23 @@ Future<void> main() async {
   }
   WidgetsFlutterBinding.ensureInitialized();
   // Must add this line.
-  await windowManager.ensureInitialized();
+  if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
+    await windowManager.ensureInitialized();
 
-  WindowOptions windowOptions = const WindowOptions(
-    size: Size(425, 720),
-    maximumSize: Size(425,720),
-    minimumSize: Size(425,720),
-    center: true,
-    backgroundColor: Colors.transparent,
-    skipTaskbar: false,
-    titleBarStyle: TitleBarStyle.normal,
-  );
+    WindowOptions windowOptions = const WindowOptions(
+      size: Size(425, 720),
+      maximumSize: Size(425, 720),
+      minimumSize: Size(425, 720),
+      center: true,
+      backgroundColor: Colors.transparent,
+      skipTaskbar: false,
+      titleBarStyle: TitleBarStyle.normal,
+    );
     windowManager.waitUntilReadyToShow(windowOptions, () async {
-    await windowManager.show();
-    await windowManager.focus();
-  });
+      await windowManager.show();
+      await windowManager.focus();
+    });
+  }
 
   runApp(const MyApp());
 }
@@ -71,15 +73,14 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(backgroundColor: Colors.blue),
-      // * The onboarding screen (first screen)
-      routes: {
-        HomeScreen.id: (_) =>  HomeScreen(), 
-        OnboardingScreen.id: (_) => const OnboardingScreen(),
-        //Next.id: (_) => const Next(),
-      },
-      initialRoute: OnboardingScreen.id
-    );
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(backgroundColor: Colors.blue),
+        // * The onboarding screen (first screen)
+        routes: {
+          HomeScreen.id: (_) => HomeScreen(),
+          OnboardingScreen.id: (_) => const OnboardingScreen(),
+          //Next.id: (_) => const Next(),
+        },
+        initialRoute: OnboardingScreen.id);
   }
 }

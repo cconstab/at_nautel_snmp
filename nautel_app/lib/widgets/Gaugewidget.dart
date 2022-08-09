@@ -78,7 +78,7 @@ class _GaugeWidgetState extends State<GaugeWidget> {
           ],
           currentValue: reading,
           displayWidget:
-              Text('${widget.measurement}', style: TextStyle(fontSize: 12)),
+              Text('${widget.measurement}', style: TextStyle(fontSize: 12,fontWeight: FontWeight.bold)),
         ),
         Container(
             width: 50,
@@ -86,7 +86,7 @@ class _GaugeWidgetState extends State<GaugeWidget> {
             padding: EdgeInsets.all(10),
             child: Text(
               '${widget.units}',
-              style: TextStyle(fontSize: 11),
+              style: TextStyle(fontSize: 11,fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ))
       ]);
