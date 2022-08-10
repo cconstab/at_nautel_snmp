@@ -30,9 +30,9 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
 
   Future<void> initKeyChain() async {
     var atSignsList = await _keyChainManager.getAtSignListFromKeychain();
-    if (atSignsList?.isNotEmpty ?? false) {
+    if (atSignsList.isNotEmpty) {
       setState(() {
-        _atSignsList = atSignsList!;
+        _atSignsList = atSignsList;
         _atsign = atSignsList[0];
       });
     } else {

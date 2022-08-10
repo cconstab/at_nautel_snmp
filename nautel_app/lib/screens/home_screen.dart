@@ -18,7 +18,7 @@ class HomeScreen extends StatelessWidget {
   HomeScreen({Key? key}) : super(key: key);
   static const String id = '/home';
 
-  final transmitter = Transmitter(stationName: 'stationName', frequency: 'frequency', ip: 'ip', fanspeed: '6000');
+  final transmitter = Transmitter(stationName: 'stationName', frequency: 'frequency', ip: 'ip');
 
   @override
   Widget build(BuildContext context) {
