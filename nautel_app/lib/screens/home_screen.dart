@@ -60,15 +60,11 @@ class _MyHomePageState extends State<MyHomePage> {
     AtClientManager atClientManager = AtClientManager.getInstance();
     NotificationService notificationService = atClientManager.notificationService;
     notificationService.subscribe(regex: '$deviceName.$nameSpace@', shouldDecrypt: true).listen(((notification) async {
-      String keyAtsign = notification.key;
-      //Uint8List buffer;
-      keyAtsign = keyAtsign.replaceAll(notification.to + ':', '');
-      keyAtsign = keyAtsign.replaceAll('.' + nameSpace + notification.from, '');
-      if (keyAtsign == deviceName) {
+
         var json = notification.value!;
         lookupTransmitter(widget.transmitter, json);
         setState(() {});
-      }
+    
     }));
 
     // Time to lookup values and
