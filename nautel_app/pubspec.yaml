@@ -19,6 +19,8 @@ dependencies:
   timer_builder: ^2.0.0
   new_gradient_app_bar: ^0.2.0
   window_manager: ^0.2.5
+  icons_launcher: ^2.0.3
+
 
 dev_dependencies:
   flutter_test:
@@ -29,4 +31,18 @@ flutter:
   uses-material-design: true
   assets:
     - .env
+
+icons_launcher:
+  image_path: 'assets/nautel_icon.png'
+  platforms:
+    android:
+      enable: true
+    ios:
+      enable: true
+    macos:
+      enable: true
+    windows:
+      enable: true 
+    linux:
+      enable: true
 
