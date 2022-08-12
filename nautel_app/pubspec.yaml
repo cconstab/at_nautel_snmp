@@ -19,13 +19,13 @@ dependencies:
   timer_builder: ^2.0.0
   new_gradient_app_bar: ^0.2.0
   window_manager: ^0.2.5
-  icons_launcher: ^2.0.3
 
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^1.0.0
+  icons_launcher: ^2.0.3
 
 flutter:
   uses-material-design: true
