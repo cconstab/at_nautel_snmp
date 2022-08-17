@@ -104,7 +104,7 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
   }
 
   Widget _newOnboard() {
-    return _onboard("", "SETUP NEW @SIGN");
+    return _onboard("@", "SETUP NEW @SIGN");
   }
 
   Widget _onboard(String atSign, String text) {
@@ -122,7 +122,7 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
           var atClientPreference = await loadAtClientPreference();
           final result = await AtOnboarding.onboard(
             context: context,
-            atsign: _atsign,
+            atsign: atSign,
             config: AtOnboardingConfig(
               atClientPreference: atClientPreference,
               domain: AtEnv.rootDomain,
