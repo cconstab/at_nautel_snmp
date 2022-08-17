@@ -4,6 +4,7 @@ import 'package:at_client_mobile/at_client_mobile.dart';
 import 'package:at_onboarding_flutter/at_onboarding_flutter.dart';
 import 'package:nautel_app/main.dart';
 import 'package:nautel_app/screens/home_screen.dart';
+import 'package:nautel_app/screens/onboarding_screen.dart';
 import 'package:nautel_app/widgets/error_dialog.dart';
 import 'package:at_app_flutter/at_app_flutter.dart';
 
@@ -132,17 +133,20 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
           );
           switch (result.status) {
             case AtOnboardingResultStatus.success:
-              final atsign = result.atsign;
+              _atsign = result.atsign;
               // TODO: handle onboard successfully
-              if (Navigator.of(context).canPop()) {
+              
                 Navigator.pushNamed(context, HomeScreen.id);
-              }
+              
               break;
             case AtOnboardingResultStatus.error:
+                Navigator.pushNamed(context, OnboardingScreen.id);
               _handleError(context);
               break;
             case AtOnboardingResultStatus.cancel:
-              // TODO: handle user canceled onboard
+              
+                Navigator.pushNamed(context, OnboardingScreen.id);
+              
               break;
           }
         },
@@ -161,7 +165,7 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
         [
           ElevatedButton(
             onPressed: () {
-              Navigator.of(context).pushReplacementNamed(HomeScreen.id);
+              Navigator.of(context).pushReplacementNamed(OnboardingScreen.id);
             },
             child: const Text('Close'),
           ),
