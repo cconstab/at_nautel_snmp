@@ -1,12 +1,11 @@
 import 'package:auto_size_text/auto_size_text.dart';
 
 import 'package:at_client_mobile/at_client_mobile.dart';
-import 'package:at_onboarding_flutter/screens/onboarding_widget.dart';
+import 'package:at_onboarding_flutter/at_onboarding_flutter.dart';
 import 'package:nautel_app/main.dart';
 import 'package:nautel_app/screens/home_screen.dart';
 import 'package:nautel_app/widgets/error_dialog.dart';
-import 'package:at_app_flutter/at_app_flutter.dart' ;
-
+import 'package:at_app_flutter/at_app_flutter.dart';
 
 import 'package:flutter/material.dart';
 
@@ -109,42 +108,48 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
 
   Widget _onboard(String atSign, String text) {
     return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        primary: Colors.greenAccent,
-        onPrimary: Colors.black,
-        textStyle: const TextStyle(
-            // fontFamily: 'LED',
-            fontSize: 30,
-            letterSpacing: 5,
-            color: Colors.white),
-      ),
-      onPressed: () async {
-        var preference = await loadAtClientPreference();
-        Onboarding(
-          atsign: atSign,
-          context: context,
-          appColor: Colors.lightBlue,
-          atClientPreference: preference,
-          domain: AtEnv.rootDomain,
-          rootEnvironment: AtEnv.rootEnvironment,
-          appAPIKey: AtEnv.appApiKey,
-          onboard: (value, atsign) {
-            if ((atsign != null) && !(_atSignsList.contains(atsign))) {
-              setState(() {
-                _atSignsList;
-                _atSignsList.add(atsign);
-                _atsign = atsign;
-              });
-            }
-            Navigator.of(context).pushNamed(HomeScreen.id);
-          },
-          onError: (error) {
-            _handleError(context);
-          },
-        );
-      },
-      child: Text(text),
-    );
+        style: ElevatedButton.styleFrom(
+          primary: Colors.greenAccent,
+          onPrimary: Colors.black,
+          textStyle: const TextStyle(
+              // fontFamily: 'LED',
+              fontSize: 30,
+              letterSpacing: 5,
+              color: Colors.white),
+        ),
+        onPressed: () async {
+          var atClientPreference = await loadAtClientPreference();
+          final result = await AtOnboarding.onboard(
+            context: context,
+            atsign: _atsign,
+            config: AtOnboardingConfig(
+              atClientPreference: atClientPreference,
+              domain: AtEnv.rootDomain,
+              rootEnvironment: AtEnv.rootEnvironment,
+              appAPIKey: AtEnv.appApiKey,
+              
+            ),
+          );
+          switch (result.status) {
+            case AtOnboardingResultStatus.success:
+              final atsign = result.atsign;
+              // TODO: handle onboard successfully
+              if (Navigator.of(context).canPop()) {
+                Navigator.pushNamed(context, HomeScreen.id);
+              }
+              break;
+            case AtOnboardingResultStatus.error:
+              _handleError(context);
+              break;
+            case AtOnboardingResultStatus.cancel:
+              // TODO: handle user canceled onboard
+              break;
+          }
+        },
+    child:      
+      Text(text));
+
+
   }
 
   void _handleError(BuildContext context) {
@@ -173,8 +178,7 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
           onPressed: () {
             _showResetDialog(context, false);
           },
-          style: ButtonStyle(
-              backgroundColor: MaterialStateProperty.all(Colors.red)),
+          style: ButtonStyle(backgroundColor: MaterialStateProperty.all(Colors.red)),
           child: const Text(
             "RESET @SIGNS",
             style: TextStyle(
@@ -213,11 +217,12 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
             itemBuilder: (BuildContext context, int index) {
               return Row(
                 children: [
-                  AutoSizeText(_atSignsList[index].toLowerCase(),
-                      minFontSize: 10,
-                      maxFontSize: 30,
-                      textAlign: TextAlign.right,
-                   ),
+                  AutoSizeText(
+                    _atSignsList[index].toLowerCase(),
+                    minFontSize: 10,
+                    maxFontSize: 30,
+                    textAlign: TextAlign.right,
+                  ),
                   Expanded(
                     child: Container(),
                   ),
@@ -285,8 +290,7 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
                     _atsign = null;
                   }
                   if (_atSignsList.length > 1 && _atsign == atsign) {
-                    _atsign =
-                        _atSignsList.firstWhere((element) => element != atsign);
+                    _atsign = _atSignsList.firstWhere((element) => element != atsign);
                   }
                   _atSignsList.remove(atsign);
                 });
