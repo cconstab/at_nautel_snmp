@@ -9,6 +9,7 @@ dependencies:
   flutter:
     sdk: flutter
   # at_client_mobile: ^3.0.32
+  at_app_flutter: ^5.0.1
   at_utils: ^3.0.0
   path_provider: ^2.0.5
   flutter_dotenv: ^5.0.2
@@ -25,11 +26,7 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^1.0.0
   icons_launcher: ^2.0.3
-  at_app_flutter: 
-    git:
-      url: https://github.com/atsign-foundation/at_app.git
-      ref: fix-pubspec-sample-apps
-      path: packages/at_app_flutter
+
 
 
 flutter:

@@ -45,8 +45,6 @@ class _GaugeWidgetState extends State<GaugeWidget> {
   @override
   void initState() {
     super.initState();
-
-    print('Init');
   }
 
   @override
