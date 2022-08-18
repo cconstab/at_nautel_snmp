@@ -8,7 +8,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  at_client_mobile: ^3.0.32
+  # at_client_mobile: ^3.0.32
   at_utils: ^3.0.0
   path_provider: ^2.0.5
   flutter_dotenv: ^5.0.2
@@ -36,6 +36,14 @@ flutter:
   uses-material-design: true
   assets:
     - .env
+
+dependency_overrides:
+  at_client_mobile:
+    git:
+      url: https://github.com/atsign-foundation/at_client_sdk.git
+      ref: hotfix/window-limit-data-length
+      path: at_client_mobile
+
 
 icons_launcher:
   image_path: 'assets/nautel_icon.png'
