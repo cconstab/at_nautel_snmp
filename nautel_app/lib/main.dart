@@ -74,7 +74,7 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(backgroundColor: Colors.blue),
+        theme: ThemeData(backgroundColor: Colors.blue, primarySwatch: Colors.green),
         // * The onboarding screen (first screen)
         routes: {
           HomeScreen.id: (_) => HomeScreen(),

@@ -118,12 +118,14 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
               letterSpacing: 5,
               color: Colors.white),
         ),
+        
         onPressed: () async {
           var atClientPreference = await loadAtClientPreference();
           final result = await AtOnboarding.onboard(
             context: context,
             atsign: atSign,
             config: AtOnboardingConfig(
+              hideQrScan: true,
               atClientPreference: atClientPreference,
               domain: AtEnv.rootDomain,
               rootEnvironment: AtEnv.rootEnvironment,
