@@ -96,7 +96,7 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
                 ),
               ],
             ),
-            _onboard(_atsign!, "GO!")
+            _onboard(_atsign!, "Go!")
           ],
         ),
       ],
@@ -104,14 +104,14 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
   }
 
   Widget _newOnboard() {
-    return _onboard('@', "SETUP NEW @SIGN");
+    return _onboard('@', "Setup new atSign");
   }
 
   Widget _onboard(String atSign, String text) {
     return ElevatedButton(
         style: ElevatedButton.styleFrom(
-          primary: Colors.greenAccent,
-          onPrimary: Colors.black,
+          primary: Colors.green,
+          onPrimary: Colors.white,
           textStyle: const TextStyle(
               // fontFamily: 'LED',
               fontSize: 30,
@@ -184,7 +184,7 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
           },
           style: ButtonStyle(backgroundColor: MaterialStateProperty.all(Colors.red)),
           child: const Text(
-            "RESET @SIGNS",
+            "Reset atSigns",
             style: TextStyle(
               color: Colors.white,
               // fontFamily: 'LED',
@@ -204,7 +204,7 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
 
   Widget _resetAtsignDialog(BuildContext context) {
     return AlertDialog(
-      title: const Text("RESET YOUR @SIGNS",
+      title: const Text("Reset your atSigns",
           style: TextStyle(
             color: Colors.black,
             // fontFamily: 'LED',
@@ -234,7 +234,7 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
                     style: ButtonStyle(
                       backgroundColor: MaterialStateProperty.all(Colors.red),
                     ),
-                    child: const Text("RESET",
+                    child: const Text("Reset",
                         style: TextStyle(
                           color: Colors.white,
                           // fontFamily: 'LED',
@@ -251,9 +251,12 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
       ),
       actions: [
         TextButton(
-          child: const Text('CANCEL',
+                style: ButtonStyle(
+                backgroundColor: MaterialStateProperty.all(Colors.lightGreen),
+              ),     
+          child: const Text('Cancel',
               style: TextStyle(
-                color: Colors.blue,
+                color: Colors.white,
                 // fontFamily: 'LED',
                 fontSize: 30,
                 letterSpacing: 5,
@@ -276,7 +279,10 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
           content: Text("Are you sure you want to reset $atsign?"),
           actions: [
             TextButton(
-              child: Text("Cancel"),
+                style: ButtonStyle(
+                backgroundColor: MaterialStateProperty.all(Colors.lightGreen),
+              ),
+              child: Text("Cancel", style: TextStyle(color: Colors.white)),
               onPressed: () {
                 _showResetDialog(context, true);
               },
