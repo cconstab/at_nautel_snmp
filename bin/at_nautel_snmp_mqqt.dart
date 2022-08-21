@@ -13,9 +13,7 @@ import 'package:mqtt_client/mqtt_server_client.dart';
 // @platform packages
 import 'package:at_client/at_client.dart';
 import 'package:at_utils/at_logger.dart';
-import 
-
-;
+import 'package:at_onboarding_cli/at_onboarding_cli.dart';
 
 import 'package:at_nautel_snmp/home_directory.dart';
 import 'package:at_nautel_snmp/check_file_exists.dart';
