@@ -15,7 +15,9 @@ dev_dependencies:
 dependencies: 
   at_client: ^3.0.3
   at_onboarding_cli: ^1.0.0
+  convert: ^3.0.2
   dart_snmp: ^2.0.0
   intl: ^0.17.0
   mqtt_client: ^9.6.9
+  typed_data: ^1.3.1
 

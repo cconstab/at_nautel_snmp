@@ -55,8 +55,6 @@ Future <void> snmpMqtt(List<String> args) async {
   parser.addOption('mqtt-host', abbr: 'm', mandatory: true, help: 'MQQT server hostname');
   parser.addOption('mqtt-username', abbr: 'u', mandatory: true, help: 'MQQT server username');
   parser.addOption('mqtt-topic', abbr: 't', mandatory: true, help: 'MQTT subjectname');
-  parser.addOption('source-ip-address',
-      abbr: 's', mandatory: false, defaultsTo: '0.0.0.0', help: 'Source IP address of SNMP');
   parser.addFlag('verbose', abbr: 'v', help: 'More logging');
 
   // Check the arguments
@@ -73,7 +71,6 @@ Future <void> snmpMqtt(List<String> args) async {
     fromAtsign = results['receiver-atsign'];
     mqttIP = results['mqtt-host'];
     mqttUsername = results['mqtt-username'];
-    sourceIp = InternetAddress(results['source-ip-address']);
     mqttTopic = results['mqtt-topic'];
     deviceName = results['device-name'];
     
