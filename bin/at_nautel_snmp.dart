@@ -230,19 +230,19 @@ void updatePrivateAtsign(
     String fromAtsign,
     String toAtsign,
     String deviceName) async {
-  var metaData = Metadata()
-    ..isPublic = false
-    ..isEncrypted = true
-    ..namespaceAware = true
-    ..ttr = -1
-    ..ttl = 10000;
+  // var metaData = Metadata()
+  //   ..isPublic = false
+  //   ..isEncrypted = true
+  //   ..namespaceAware = true
+  //   ..ttr = -1
+  //   ..ttl = 10000;
 
-  var key = AtKey()
-    ..key = deviceName
-    ..sharedBy = fromAtsign
-    ..sharedWith = toAtsign
-    ..namespace = atClient.getPreferences()?.namespace
-    ..metadata = metaData;
+  // var key = AtKey()
+  //   ..key = deviceName
+  //   ..sharedBy = fromAtsign
+  //   ..sharedWith = toAtsign
+  //   ..namespace = atClient.getPreferences()?.namespace
+  //   ..metadata = metaData;
 
   try {
     await notificationService
