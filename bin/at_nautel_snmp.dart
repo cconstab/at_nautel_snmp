@@ -6,6 +6,8 @@ import 'dart:async';
 import 'package:args/args.dart';
 import 'package:dart_snmp/dart_snmp.dart';
 import 'package:logging/src/level.dart';
+import 'package:chalkdart/chalk.dart';
+
 
 // @platform packages
 import 'package:at_client/at_client.dart';
@@ -119,33 +121,33 @@ Future<void> snmp(List<String> args) async {
     ..isLocalStoreRequired = true
     ..commitLogPath = '$homeDirectory/.$nameSpace/$fromAtsign/storage/commitLog'
     //..cramSecret = '<your cram secret>';
-    ..atKeysFilePath = atsignFile;
+    ..atKeysFilePath = atsignFile
+    ..fetchOfflineNotifications = false
+    ..useAtChops = true;
+
 
   AtOnboardingService onboardingService =
       AtOnboardingServiceImpl(fromAtsign, atOnboardingConfig);
 
-  await onboardingService.authenticate();
-
-  AtClient? atClient = await onboardingService.getAtClient();
-
-  AtClientManager atClientManager = AtClientManager.getInstance();
-
-  NotificationService notificationService = atClientManager.notificationService;
-
-  bool syncComplete = false;
-  void onSyncDone(syncResult) {
-    _logger.info("syncResult.syncStatus: ${syncResult.syncStatus}");
-    _logger.info("syncResult.lastSyncedOn ${syncResult.lastSyncedOn}");
-    syncComplete = true;
+  bool onboarded = false;
+  Duration retryDuration = Duration(seconds: 3);
+  while (!onboarded) {
+    try {
+      stdout.write(chalk.brightBlue('\r\x1b[KConnecting ... '));
+      await Future.delayed(Duration(milliseconds: 1000)); // Pause just long enough for the retry to be visible
+      onboarded = await onboardingService.authenticate();
+    } catch (exception) {
+      stdout.write(chalk.brightRed('$exception. Will retry in ${retryDuration.inSeconds} seconds'));
+    }
+    if (!onboarded) {
+      await Future.delayed(retryDuration);
+    }
   }
+  stdout.writeln(chalk.brightGreen('Connected'));
 
-  // Wait for initial sync to complete
-  _logger.info("Waiting for initial sync");
-  syncComplete = false;
-  atClientManager.syncService.sync(onDone: onSyncDone);
-  while (!syncComplete) {
-    await Future.delayed(Duration(milliseconds: 100));
-  }
+
+  // Current atClient is the one which the onboardingService just authenticated
+  AtClient atClient = AtClientManager.getInstance().atClient;
   late Snmp session;
   bool sessionBool = false;
   while (true) {
@@ -154,7 +156,7 @@ Future<void> snmp(List<String> args) async {
       sessionBool = true;
       session.retries = 5;
 
-      await mainloop(_logger, nautel, session, atClient!, notificationService,
+      await mainloop(_logger, nautel, session, atClient, atClient.notificationService,
           fromAtsign, toAtsign, deviceName);
     } catch (e) {
       _logger.severe(e);
