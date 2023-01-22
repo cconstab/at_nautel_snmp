@@ -247,7 +247,7 @@ void updatePrivateAtsign(
     ..metadata = metaData;
 
   try {
-    await notificationService
+     notificationService
         .notify(NotificationParams.forUpdate(key, value: json),
             onSuccess: (notification) {
       _logger.info('SUCCESS:' + notification.toString());

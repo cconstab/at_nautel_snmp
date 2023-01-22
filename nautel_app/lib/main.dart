@@ -1,11 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:at_app_flutter/at_app_flutter.dart' show AtEnv;
 import 'package:at_client_mobile/at_client_mobile.dart';
-import 'package:at_onboarding_flutter/at_onboarding_flutter.dart'
-    show Onboarding;
-import 'package:at_utils/at_logger.dart' show AtSignLogger;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:nautel_app/screens/onboarding_screen.dart';
@@ -15,13 +11,11 @@ import 'package:path_provider/path_provider.dart'
     show getApplicationSupportDirectory;
 import 'package:window_manager/window_manager.dart';
 
-final AtSignLogger _logger = AtSignLogger(AtEnv.appNamespace);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Must add this line.
   if (kIsWeb) {
-    print('here');
   } else {
     if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
       await windowManager.ensureInitialized();
@@ -55,8 +49,6 @@ Future<AtClientPreference> loadAtClientPreference() async {
     ..commitLogPath = dir.path
     ..fetchOfflineNotifications = false
     ..isLocalStoreRequired = true;
-
-  // TODO
   // * By default, this configuration is suitable for most applications
   // * In advanced cases you may need to modify [AtClientPreference]
   // * Read more here: https://pub.dev/documentation/at_client/latest/at_client/AtClientPreference-class.html

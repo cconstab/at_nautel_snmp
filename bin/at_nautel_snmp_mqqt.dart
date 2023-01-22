@@ -1,6 +1,5 @@
 import 'dart:io';
-import 'dart:convert';
-import 'dart:typed_data';
+
 import 'dart:async';
 
 
@@ -34,7 +33,7 @@ void main(List<String> args) async {
 
 
 Future <void> snmpMqtt(List<String> args) async {
-  InternetAddress sourceIp;
+  //InternetAddress sourceIp;
   String mqttIP;
   String mqttTopic;
   String mqttUsername;
@@ -121,7 +120,7 @@ Future <void> snmpMqtt(List<String> args) async {
 
   AtClientManager atClientManager = AtClientManager.getInstance();
 
-  NotificationService notificationService = atClientManager.notificationService;
+  NotificationService notificationService = atClientManager.atClient.notificationService;
 
 // Keep an eye on connectivity and report failures if we see them
   ConnectivityListener().subscribe().listen((isConnected) {

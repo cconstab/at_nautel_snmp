@@ -1,6 +1,7 @@
-// ignore_for_file: unnecessary_this
 
-import 'package:nautel_app/models/transmitter_model.dart';
+// ignore_for_file: file_names
+
+import 'package:nautel_app/models/transmittermodel.dart';
 import 'package:pretty_gauge/pretty_gauge.dart';
 import 'package:timer_builder/timer_builder.dart';
 import 'package:flutter/material.dart';
@@ -21,8 +22,8 @@ class GaugeWidget extends StatefulWidget {
   final Transmitter transmitter;
   final double lastvalue;
 
-  GaugeWidget(
-      {required this.measurement,
+  const GaugeWidget(
+      {Key? key, required this.measurement,
       required this.units,
       required this.transmitter,
       required this.value,
@@ -35,7 +36,7 @@ class GaugeWidget extends StatefulWidget {
       this.lowColor = Colors.green,
       this.highSector = 40.0,
       this.medSector = 40.0,
-      this.lowSector = 20.0});
+      this.lowSector = 20.0}) : super(key: key);
 
   @override
   State<GaugeWidget> createState() => _GaugeWidgetState();
@@ -51,7 +52,7 @@ class _GaugeWidgetState extends State<GaugeWidget> {
   Widget build(BuildContext context) {
     double read = getValue(widget.value);
     double reading = getMeter(widget.value);
-    var step = (this.widget.topRange - this.widget.bottomRange) / 1000;
+    var step = (widget.topRange - widget.bottomRange) / 1000;
     return TimerBuilder.periodic(const Duration(milliseconds: 10), builder: (context) {
       read = getValue(widget.value);
       if (reading - step > read) {
@@ -76,15 +77,15 @@ class _GaugeWidgetState extends State<GaugeWidget> {
           ],
           currentValue: reading,
           displayWidget:
-              Text('${widget.measurement}', style: TextStyle(fontSize: 12,fontWeight: FontWeight.bold)),
+              Text(widget.measurement, style: const TextStyle(fontSize: 12,fontWeight: FontWeight.bold)),
         ),
         Container(
             width: 50,
             height: 50,
-            padding: EdgeInsets.all(10),
+            padding: const EdgeInsets.all(10),
             child: Text(
-              '${widget.units}',
-              style: TextStyle(fontSize: 11,fontWeight: FontWeight.bold),
+              widget.units,
+              style: const TextStyle(fontSize: 11,fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ))
       ]);
@@ -94,7 +95,7 @@ class _GaugeWidgetState extends State<GaugeWidget> {
   }
 
   double getValue(String value) {
-    var result;
+    String? result;
     switch (value) {
       case 'fanspeed':
         result = widget.transmitter.fanspeed;
@@ -118,11 +119,11 @@ class _GaugeWidgetState extends State<GaugeWidget> {
         result = "0.0";
         break;
     }
-    return (double.parse(result));
+    return (double.parse(result!));
   }
 
   double getMeter(String value) {
-    var result;
+    String? result;
     switch (value) {
       case 'fanspeed':
         result = widget.transmitter.meterFanspeed;
@@ -146,37 +147,30 @@ class _GaugeWidgetState extends State<GaugeWidget> {
         result = "0.0";
         break;
     }
-    return (double.parse(result));
+    return (double.parse(result!));
   }
 
   setMeter(String value, double reading) {
-    var result;
     switch (value) {
       case 'fanspeed':
         widget.transmitter.meterFanspeed = reading.toString();
         break;
       case 'heatsinktemp':
-        widget.transmitter.meterHeatsinktemp = reading.toString();
-        ;
+        widget.transmitter.meterHeatsinktemp = reading.toString(); {}
         break;
       case 'peakmodulation':
-        widget.transmitter.meterPeakmodulation = reading.toString();
-        ;
+        widget.transmitter.meterPeakmodulation = reading.toString(); {}
         break;
       case 'poweroutput':
-        widget.transmitter.meterPoweroutput = reading.toString();
-        ;
+        widget.transmitter.meterPoweroutput = reading.toString(); {}
         break;
       case 'powerreflected':
-        widget.transmitter.meterPowerreflected = reading.toString();
-        ;
+        widget.transmitter.meterPowerreflected = reading.toString(); {}
         break;
       case 'swr':
-        widget.transmitter.meterSwr = reading.toString();
-        ;
+        widget.transmitter.meterSwr = reading.toString(); {}
         break;
       default:
-        result = "0.0";
         break;
     }
   }

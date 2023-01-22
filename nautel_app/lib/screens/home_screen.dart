@@ -11,7 +11,7 @@ import 'package:flutter/material.dart';
 
 import 'package:new_gradient_app_bar/new_gradient_app_bar.dart';
 
-import 'package:nautel_app/models/transmitter_model.dart';
+import 'package:nautel_app/models/transmittermodel.dart';
 import 'package:nautel_app/screens/onboarding_screen.dart';
 
 import '../transmitter_lookup.dart';
@@ -194,7 +194,7 @@ class _MyHomePageState extends State<MyHomePage> {
             crossAxisCount: 2,
             children: <Widget>[
               Container(
-                padding: EdgeInsets.all(10),
+                padding: const EdgeInsets.all(10),
                 child: GaugeWidget(
                   measurement: 'SWR',
                   units: '',
@@ -212,7 +212,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ),
               Container(
-                padding: EdgeInsets.all(10),
+                padding: const EdgeInsets.all(10),
                 child: GaugeWidget(
                   measurement: 'Modulation',
                   units: '%',
@@ -230,7 +230,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ),
               Container(
-                padding: EdgeInsets.all(10),
+                padding: const EdgeInsets.all(10),
                 child: GaugeWidget(
                   measurement: 'Power Out',
                   units: 'Watts',
@@ -248,7 +248,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ),
               Container(
-                padding: EdgeInsets.all(10),
+                padding: const EdgeInsets.all(10),
                 child: GaugeWidget(
                   measurement: 'Power Ref',
                   units: 'Watts',
@@ -266,7 +266,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ),
               Container(
-                padding: EdgeInsets.all(10),
+                padding: const EdgeInsets.all(10),
                 child: GaugeWidget(
                   measurement: 'Heat Temp',
                   units: '°C',
@@ -284,7 +284,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ),
               Container(
-                padding: EdgeInsets.all(10),
+                padding: const EdgeInsets.all(10),
                 child: GaugeWidget(
                   measurement: 'Fan Speed',
                   units: 'RPM',
@@ -351,7 +351,7 @@ class _MyHomePageState extends State<MyHomePage> {
             crossAxisCount: 2,
             children: <Widget>[
               Container(
-                padding: EdgeInsets.all(10),
+                padding: const EdgeInsets.all(10),
                 child: GaugeWidget(
                   measurement: 'SWR',
                   units: '',
@@ -369,7 +369,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ),
               Container(
-                padding: EdgeInsets.all(10),
+                padding: const EdgeInsets.all(10),
                 child: GaugeWidget(
                   measurement: 'Modulation',
                   units: '%',
@@ -387,7 +387,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ),
               Container(
-                padding: EdgeInsets.all(10),
+                padding: const EdgeInsets.all(10),
                 child: GaugeWidget(
                   measurement: 'Power Out',
                   units: 'Watts',
@@ -405,7 +405,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ),
               Container(
-                padding: EdgeInsets.all(10),
+                padding: const EdgeInsets.all(10),
                 child: GaugeWidget(
                   measurement: 'Power Ref',
                   units: 'Watts',
@@ -423,7 +423,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ),
               Container(
-                padding: EdgeInsets.all(10),
+                padding: const EdgeInsets.all(10),
                 child: GaugeWidget(
                   measurement: 'Heat Temp',
                   units: '°C',
@@ -441,7 +441,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ),
               Container(
-                padding: EdgeInsets.all(10),
+                padding: const EdgeInsets.all(10),
                 child: GaugeWidget(
                   measurement: 'Fan Speed',
                   units: 'RPM',

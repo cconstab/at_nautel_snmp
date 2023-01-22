@@ -37,9 +37,7 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
       });
     } else {
       setState(() {
-        if (atSignsList != null) {
-          _atSignsList = atSignsList;
-        }
+        _atSignsList = atSignsList;
       });
     }
   }
@@ -110,8 +108,7 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
   Widget _onboard(String atSign, String text) {
     return ElevatedButton(
         style: ElevatedButton.styleFrom(
-          primary: Colors.green,
-          onPrimary: Colors.white,
+          foregroundColor: Colors.white, backgroundColor: Colors.green,
           textStyle: const TextStyle(
               // fontFamily: 'LED',
               fontSize: 30,
@@ -136,7 +133,6 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
           switch (result.status) {
             case AtOnboardingResultStatus.success:
               _atsign = result.atsign;
-              // TODO: handle onboard successfully
               
                 Navigator.pushNamed(context, HomeScreen.id);
               
@@ -277,14 +273,14 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text("Reset Confirmation"),
+          title: const Text("Reset Confirmation"),
           content: Text("Are you sure you want to reset $atsign?"),
           actions: [
             TextButton(
                 style: ButtonStyle(
                 backgroundColor: MaterialStateProperty.all(Colors.lightGreen),
               ),
-              child: Text("Cancel", style: TextStyle(color: Colors.white)),
+              child: const Text("Cancel", style: TextStyle(color: Colors.white)),
               onPressed: () {
                 _showResetDialog(context, true);
               },
@@ -293,7 +289,7 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
               style: ButtonStyle(
                 backgroundColor: MaterialStateProperty.all(Colors.red),
               ),
-              child: Text("Reset", style: TextStyle(color: Colors.white)),
+              child: const Text("Reset", style: TextStyle(color: Colors.white)),
               onPressed: () {
                 _showResetDialog(context, true);
                 _keyChainManager.deleteAtSignFromKeychain(atsign);

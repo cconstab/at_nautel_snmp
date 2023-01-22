@@ -1,7 +1,5 @@
-import 'package:nautel_app/models/transmitter_model.dart';
-import 'package:intl/intl.dart';
+import 'package:nautel_app/models/transmittermodel.dart';
 
-import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 void lookupTransmitter(Transmitter transmitter, String result) async {
