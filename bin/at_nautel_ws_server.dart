@@ -62,16 +62,20 @@ Stream<String> transmitterStream() async* {
     ..atKeysFilePath = atsignFile
     ..useAtChops = true;
 
-  AtOnboardingService onboardingService = AtOnboardingServiceImpl(atSign, atOnboardingConfig);
+  AtOnboardingService onboardingService =
+      AtOnboardingServiceImpl(atSign, atOnboardingConfig);
   bool onboarded = false;
   Duration retryDuration = Duration(seconds: 3);
   while (!onboarded) {
     try {
       stdout.write(chalk.brightBlue('\r\x1b[KConnecting ... '));
-      await Future.delayed(Duration(milliseconds: 1000)); // Pause just long enough for the retry to be visible
+      await Future.delayed(Duration(
+          milliseconds:
+              1000)); // Pause just long enough for the retry to be visible
       onboarded = await onboardingService.authenticate();
     } catch (exception) {
-      stdout.write(chalk.brightRed('$exception. Will retry in ${retryDuration.inSeconds} seconds'));
+      stdout.write(chalk.brightRed(
+          '$exception. Will retry in ${retryDuration.inSeconds} seconds'));
     }
     if (!onboarded) {
       await Future.delayed(retryDuration);
@@ -81,18 +85,19 @@ Stream<String> transmitterStream() async* {
 
   AtClientManager atClientManager = AtClientManager.getInstance();
 
-  NotificationService notificationService = atClientManager.atClient.notificationService;
+  NotificationService notificationService =
+      atClientManager.atClient.notificationService;
 
-  notificationService.subscribe(regex: '$deviceName.$nameSpace@', shouldDecrypt: true).listen(((notification) async {
-    String keyAtsign = notification.key;
-    //Uint8List buffer;
-    keyAtsign = keyAtsign.replaceAll('${notification.to}:', '');
-    keyAtsign = keyAtsign.replaceAll('.$nameSpace${notification.from}', '');
-    if (keyAtsign == deviceName) {
-      _logger.info('SNMP update recieved from ${notification.from} notification id : ${notification.id}');
-      json = notification.value!;
-      print(json);
-      streamController.sink.add(json);
+  notificationService.subscribe(regex: '$atSign:{"stationName":"$deviceName"', shouldDecrypt: true).listen(
+      ((notification) async {
+    print(notification.toString());
+    String? json = notification.key;
+    json = json.replaceFirst('$atSign:', '');
+     if (notification.from == '@$nameSpace') {
+    _logger.info(
+        'SNMP update recieved from ${notification.from} notification id : ${notification.id}');
+    print(json);
+    streamController.sink.add(json);
     }
   }),
       onError: (e) => _logger.severe('Notification Failed:$e'),

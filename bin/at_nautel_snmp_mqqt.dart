@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'dart:async';
 
-
 // external packages
 import 'package:args/args.dart';
 import 'package:logging/src/level.dart';
@@ -21,18 +20,17 @@ var pongCount = 0; // Pong counter
 var mqttSession = MqttServerClient('test.mosquitto.org', '');
 
 void main(List<String> args) async {
-        //starting secondary in a zone
-    var logger = AtSignLogger('atNautel reciever ');
-      runZonedGuarded(() async {
-        await snmpMqtt(args);
-      }, (error, stackTrace) {
-        logger.severe('Uncaught error: $error');
-        logger.severe(stackTrace.toString());
-      });
-    }
+  //starting secondary in a zone
+  var logger = AtSignLogger('atNautel reciever ');
+  runZonedGuarded(() async {
+    await snmpMqtt(args);
+  }, (error, stackTrace) {
+    logger.severe('Uncaught error: $error');
+    logger.severe(stackTrace.toString());
+  });
+}
 
-
-Future <void> snmpMqtt(List<String> args) async {
+Future<void> snmpMqtt(List<String> args) async {
   //InternetAddress sourceIp;
   String mqttIP;
   String mqttTopic;
@@ -48,12 +46,19 @@ Future <void> snmpMqtt(List<String> args) async {
   var parser = ArgParser();
 // Args
   parser.addOption('key-file',
-      abbr: 'k', mandatory: false, help: 'transmitters @sign\'s atKeys file if not in ~/.atsign/keys/');
-  parser.addOption('receiver-atsign', abbr: 'r', mandatory: true, help: '@sign that recieves notifications');
-  parser.addOption('device-name', abbr: 'n', mandatory: true, help: 'Device name, used as AtKey:key');
-  parser.addOption('mqtt-host', abbr: 'm', mandatory: true, help: 'MQQT server hostname');
-  parser.addOption('mqtt-username', abbr: 'u', mandatory: true, help: 'MQQT server username');
-  parser.addOption('mqtt-topic', abbr: 't', mandatory: true, help: 'MQTT subjectname');
+      abbr: 'k',
+      mandatory: false,
+      help: 'transmitters @sign\'s atKeys file if not in ~/.atsign/keys/');
+  parser.addOption('receiver-atsign',
+      abbr: 'r', mandatory: true, help: '@sign that recieves notifications');
+  parser.addOption('device-name',
+      abbr: 'n', mandatory: true, help: 'Device name, used as AtKey:key');
+  parser.addOption('mqtt-host',
+      abbr: 'm', mandatory: true, help: 'MQQT server hostname');
+  parser.addOption('mqtt-username',
+      abbr: 'u', mandatory: true, help: 'MQQT server username');
+  parser.addOption('mqtt-topic',
+      abbr: 't', mandatory: true, help: 'MQTT subjectname');
   parser.addFlag('verbose', abbr: 'v', help: 'More logging');
 
   // Check the arguments
@@ -72,7 +77,7 @@ Future <void> snmpMqtt(List<String> args) async {
     mqttUsername = results['mqtt-username'];
     mqttTopic = results['mqtt-topic'];
     deviceName = results['device-name'];
-    
+
     var targetlist = await InternetAddress.lookup(mqttIP);
     target = targetlist[0];
 
@@ -112,7 +117,8 @@ Future <void> snmpMqtt(List<String> args) async {
     //..cramSecret = '<your cram secret>';
     ..atKeysFilePath = atsignFile;
 
-  AtOnboardingService onboardingService = AtOnboardingServiceImpl(fromAtsign, atOnboardingConfig);
+  AtOnboardingService onboardingService =
+      AtOnboardingServiceImpl(fromAtsign, atOnboardingConfig);
 
   await onboardingService.authenticate();
 
@@ -120,7 +126,8 @@ Future <void> snmpMqtt(List<String> args) async {
 
   AtClientManager atClientManager = AtClientManager.getInstance();
 
-  NotificationService notificationService = atClientManager.atClient.notificationService;
+  NotificationService notificationService =
+      atClientManager.atClient.notificationService;
 
 // Keep an eye on connectivity and report failures if we see them
   ConnectivityListener().subscribe().listen((isConnected) {
@@ -131,27 +138,6 @@ Future <void> snmpMqtt(List<String> args) async {
     }
   });
 
-//Waiting for sync breaks stuff for now
-// As we only use notifications thats just fine
-  // bool syncComplete = false;
-  // void onSyncDone(syncResult) {
-  //   _logger.info("syncResult.syncStatus: ${syncResult.syncStatus}");
-  //   _logger.info("syncResult.lastSyncedOn ${syncResult.lastSyncedOn}");
-  //   syncComplete = true;
-  // }
-
-  // // Wait for initial sync to complete
-  // _logger.info("Waiting for initial sync");
-  // syncComplete = false;
-  // atClientManager.syncService.sync(onDone: onSyncDone);
-  // while (!syncComplete) {
-  //   await Future.delayed(Duration(milliseconds: 100));
-  // }
-
-  // atClientManager.syncService.sync(onDone: () {
-  //   _logger.info('sync complete');
-  // });
-
 // Set up MQTT
   mqttSession = MqttServerClient(mqttIP, deviceName, maxConnectionAttempts: 10);
   final builder = MqttClientPayloadBuilder();
@@ -160,10 +146,11 @@ Future <void> snmpMqtt(List<String> args) async {
   mqttSession.keepAlivePeriod = 20;
   mqttSession.autoReconnect = true;
   // Pong Callback
-    void pong() {
-      _logger.info('Mosquitto Ping response client callback invoked');
-  pongCount++;
+  void pong() {
+    _logger.info('Mosquitto Ping response client callback invoked');
+    pongCount++;
   }
+
   mqttSession.pongCallback = pong;
 
   // await mqttSession.connect(mqttUsername, 'KRYZ');
@@ -202,36 +189,48 @@ Future <void> snmpMqtt(List<String> args) async {
     _logger.info(' Mosquitto client connected');
   } else {
     /// Use status here rather than state if you also want the broker return code.
-    _logger
-        .severe(' Mosquitto client connection failed - disconnecting, status is ${mqttSession.connectionStatus}');
+    _logger.severe(
+        ' Mosquitto client connection failed - disconnecting, status is ${mqttSession.connectionStatus}');
     mqttSession.disconnect();
     exit(-1);
   }
 
-  notificationService.subscribe(regex: '$deviceName.$nameSpace@', shouldDecrypt: true).listen(((notification) async {
-    String keyAtsign = notification.key;
-    //Uint8List buffer;
-    keyAtsign = keyAtsign.replaceAll(notification.to + ':', '');
-    keyAtsign = keyAtsign.replaceAll('.' + nameSpace + notification.from, '');
-    if (keyAtsign == deviceName) {
-      _logger.info('SNMP update recieved from ' + notification.from + ' notification id : ' + notification.id);
-      var json = notification.value!;
+  // notificationService.subscribe(regex: '$deviceName.$nameSpace@', shouldDecrypt: true).listen(((notification) async {
+  //   String keyAtsign = notification.key;
+  //   //Uint8List buffer;
+  //   keyAtsign = keyAtsign.replaceAll(notification.to + ':', '');
+  //   keyAtsign = keyAtsign.replaceAll('.' + nameSpace + notification.from, '');
+  //   if (keyAtsign == deviceName) {
+  //     _logger.info('SNMP update recieved from ' + notification.from + ' notification id : ' + notification.id);
+  //     var json = notification.value!;
+  //     print(json);
+  String? atSign = AtClientManager.getInstance().atClient.getCurrentAtSign();
+  notificationService
+      .subscribe(
+          regex: '$atSign:{"stationName":"$deviceName"', shouldDecrypt: true)
+      .listen(((notification) async {
+    print(notification.toString());
+    String? json = notification.key;
+    json = json.replaceFirst('$atSign:', '');
+    if (notification.from == '@$nameSpace') {
+      _logger.info(
+          'SNMP update recieved from ${notification.from} notification id : ${notification.id}');
       print(json);
+
       await mqttSession.connect();
 
-      if (mqttSession.connectionStatus!.state == MqttConnectionState.connected) {
+      if (mqttSession.connectionStatus!.state ==
+          MqttConnectionState.connected) {
         _logger.info('Mosquitto client connected sending message');
-        mqttSession.publishMessage(mqttTopic, MqttQos.atMostOnce, builder.addString(json).payload!, retain: false);
+        mqttSession.publishMessage(
+            mqttTopic, MqttQos.atMostOnce, builder.addString(json).payload!,
+            retain: false);
         builder.clear();
       } else {
         await mqttSession.connect();
       }
     }
   }),
-      onError: (e) => _logger.severe('Notification Failed:' + e.toString()),
-      onDone: () => _logger.info('Notification listener stopped'));
-
-
+          onError: (e) => _logger.severe('Notification Failed:' + e.toString()),
+          onDone: () => _logger.info('Notification listener stopped'));
 }
-
-

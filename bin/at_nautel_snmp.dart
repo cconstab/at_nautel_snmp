@@ -232,23 +232,10 @@ void updatePrivateAtsign(
     String fromAtsign,
     String toAtsign,
     String deviceName) async {
-  var metaData = Metadata()
-    ..isPublic = false
-    ..isEncrypted = true
-    ..namespaceAware = true
-    ..ttr = -1
-    ..ttl = 10000;
-
-  var key = AtKey()
-    ..key = deviceName
-    ..sharedBy = fromAtsign
-    ..sharedWith = toAtsign
-    ..namespace = atClient.getPreferences()?.namespace
-    ..metadata = metaData;
 
   try {
      notificationService
-        .notify(NotificationParams.forUpdate(key, value: json),
+        .notify(NotificationParams.forText(json, toAtsign, shouldEncrypt: true),
             onSuccess: (notification) {
       _logger.info('SUCCESS:' + notification.toString());
     }, onError: (notification) {

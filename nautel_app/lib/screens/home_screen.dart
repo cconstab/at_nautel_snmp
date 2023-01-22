@@ -75,20 +75,26 @@ class _MyHomePageState extends State<MyHomePage> {
       });
     } else {
       AtClientManager atClientManager = AtClientManager.getInstance();
+      String? atSign = atClientManager.atClient.getCurrentAtSign();
       NotificationService notificationService =
           atClientManager.atClient.notificationService;
+
+      
       notificationService
-          .subscribe(regex: '$deviceName.$nameSpace@', shouldDecrypt: true)
+          .subscribe(
+              regex: '$atSign:{"stationName":"$deviceName"',
+              shouldDecrypt: true)
           .listen(((notification) async {
-        var json = notification.value!;
-        lookupTransmitter(widget.transmitter, json);
-        setState(() {});
+        print(notification.toString());
+        String? json = notification.key;
+        json = json.replaceFirst('$atSign:', '');
+        if (notification.from == '@$nameSpace') {
+          print(json);
+          lookupTransmitter(widget.transmitter, json);
+          setState(() {});
+        }
       }));
     }
-
-    // Time to lookup values and
-    // time it takes for needle to travel to
-    // new value without jumping
   }
 
   @override
@@ -305,7 +311,7 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ),
       );
-    }else{
+    } else {
       return Scaffold(
         appBar: NewGradientAppBar(
           gradient: const LinearGradient(colors: [
