@@ -1,8 +1,12 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:web_socket_channel/web_socket_channel.dart';
+// import 'package:web_socket_channel/io.dart';
+// import 'package:web_socket_channel/status.dart' as status;
 
 import 'package:at_client_mobile/at_client_mobile.dart';
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:new_gradient_app_bar/new_gradient_app_bar.dart';
@@ -18,7 +22,8 @@ class HomeScreen extends StatelessWidget {
   HomeScreen({Key? key}) : super(key: key);
   static const String id = '/home';
 
-  final transmitter = Transmitter(stationName: 'stationName', frequency: 'frequency', ip: 'ip');
+  final transmitter =
+      Transmitter(stationName: 'stationName', frequency: 'frequency', ip: 'ip');
 
   @override
   Widget build(BuildContext context) {
@@ -31,8 +36,8 @@ class HomeScreen extends StatelessWidget {
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       home: MyHomePage(title: 'Nautel Meter', transmitter: transmitter),
-            routes: {
-        HomeScreen.id: (_) =>  HomeScreen(), 
+      routes: {
+        HomeScreen.id: (_) => HomeScreen(),
         OnboardingScreen.id: (_) => const OnboardingScreen(),
         //Next.id: (_) => const Next(),
       },
@@ -41,7 +46,8 @@ class HomeScreen extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key? key, this.title, required this.transmitter}) : super(key: key);
+  const MyHomePage({Key? key, this.title, required this.transmitter})
+      : super(key: key);
   final Transmitter transmitter;
   final String? title;
 
@@ -57,15 +63,29 @@ class _MyHomePageState extends State<MyHomePage> {
     super.initState();
     String deviceName = 'KRYZ';
     String nameSpace = 'kryz_9850';
-    AtClientManager atClientManager = AtClientManager.getInstance();
-    NotificationService notificationService = atClientManager.atClient.notificationService;
-    notificationService.subscribe(regex: '$deviceName.$nameSpace@', shouldDecrypt: true).listen(((notification) async {
+    if (kIsWeb) {
+      print('hello');
+      final channel = WebSocketChannel.connect(Uri.parse('ws://192.168.1.76:5555'));
 
+      channel.stream.listen((message) {
+        // channel.sink.add('received!');
+        print(message);
+        var json = message;
+        lookupTransmitter(widget.transmitter, json);
+        setState(() {});
+      });
+    } else {
+      AtClientManager atClientManager = AtClientManager.getInstance();
+      NotificationService notificationService =
+          atClientManager.atClient.notificationService;
+      notificationService
+          .subscribe(regex: '$deviceName.$nameSpace@', shouldDecrypt: true)
+          .listen(((notification) async {
         var json = notification.value!;
         lookupTransmitter(widget.transmitter, json);
         setState(() {});
-    
-    }));
+      }));
+    }
 
     // Time to lookup values and
     // time it takes for needle to travel to
@@ -84,7 +104,10 @@ class _MyHomePageState extends State<MyHomePage> {
     }
     return Scaffold(
       appBar: NewGradientAppBar(
-        gradient: const LinearGradient(colors: [Color.fromARGB(255, 173, 83, 78), Color.fromARGB(255, 108, 169, 197)]),
+        gradient: const LinearGradient(colors: [
+          Color.fromARGB(255, 173, 83, 78),
+          Color.fromARGB(255, 108, 169, 197)
+        ]),
         title: AutoSizeText(
           widget.transmitter.stationName.toString() +
               " " +
@@ -106,11 +129,10 @@ class _MyHomePageState extends State<MyHomePage> {
                 case 'Exit':
                   exit(0);
                 case 'Back':
-                setState(() {
-                      Navigator.pushNamed(context, OnboardingScreen.id);
-                    });
+                  setState(() {
+                    Navigator.pushNamed(context, OnboardingScreen.id);
+                  });
                   break;
-
               }
             },
             itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
@@ -150,12 +172,18 @@ class _MyHomePageState extends State<MyHomePage> {
               ? const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color.fromARGB(255, 240, 181, 178), Color.fromARGB(255, 171, 200, 224)],
+                  colors: [
+                    Color.fromARGB(255, 240, 181, 178),
+                    Color.fromARGB(255, 171, 200, 224)
+                  ],
                 )
               : const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color.fromARGB(255, 240, 181, 178), Color.fromARGB(255, 171, 200, 224)],
+                  colors: [
+                    Color.fromARGB(255, 240, 181, 178),
+                    Color.fromARGB(255, 171, 200, 224)
+                  ],
                 ),
         ),
         child: GridView.count(
