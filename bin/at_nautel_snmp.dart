@@ -192,7 +192,7 @@ Future<void> mainloop(
     // only update the public side once in a while
       updatePrivateAtsign(_logger, ts, atClient, notificationService,
           fromAtsign, toAtsign, deviceName);
-    await Future.delayed(Duration(seconds: 1));
+    await Future.delayed(Duration(milliseconds: 500));
   }
 }
 
