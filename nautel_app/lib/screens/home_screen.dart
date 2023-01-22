@@ -58,7 +58,7 @@ class _MyHomePageState extends State<MyHomePage> {
     String deviceName = 'KRYZ';
     String nameSpace = 'kryz_9850';
     AtClientManager atClientManager = AtClientManager.getInstance();
-    NotificationService notificationService = atClientManager.notificationService;
+    NotificationService notificationService = atClientManager.atClient.notificationService;
     notificationService.subscribe(regex: '$deviceName.$nameSpace@', shouldDecrypt: true).listen(((notification) async {
 
         var json = notification.value!;
@@ -89,9 +89,9 @@ class _MyHomePageState extends State<MyHomePage> {
           widget.transmitter.stationName.toString() +
               " " +
               widget.transmitter.frequency.toString() +
-              '    ' +
+              ' ' +
               widget.transmitter.date.toString(),
-          minFontSize: 5,
+          minFontSize: 3,
         ),
         actions: [
           PopupMenuButton<String>(
