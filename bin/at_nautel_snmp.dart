@@ -8,7 +8,6 @@ import 'package:dart_snmp/dart_snmp.dart';
 import 'package:logging/src/level.dart';
 import 'package:chalkdart/chalk.dart';
 
-
 // @platform packages
 import 'package:at_client/at_client.dart';
 import 'package:at_utils/at_logger.dart';
@@ -36,6 +35,7 @@ Future<void> snmp(List<String> args) async {
   String nameSpace = 'kryz_9850';
   String deviceName;
   String frequency;
+  String pollDelay;
   Transmitter nautel;
   InternetAddress target;
   final AtSignLogger _logger = AtSignLogger(' nautel ');
@@ -64,6 +64,10 @@ Future<void> snmp(List<String> args) async {
       help: 'Source IP address of SNMP');
   parser.addOption('frequency',
       abbr: 'f', mandatory: true, help: 'Frequency of transmitter');
+  parser.addOption('pollDelay',
+      abbr: 'd',
+      defaultsTo: '1000',
+      help: 'Delay between SNMP polls in milliseconds');
   parser.addFlag('verbose', abbr: 'v', help: 'More logging');
 
   // Check the arguments
@@ -85,6 +89,7 @@ Future<void> snmp(List<String> args) async {
     sourceIp = InternetAddress(results['source-ip-address']);
     frequency = results['frequency'];
     deviceName = results['name'];
+    pollDelay = results['pollDelay'];
     nautel = Transmitter(stationName: name, frequency: frequency, ip: ip);
     target = InternetAddress(ip);
 
@@ -125,7 +130,6 @@ Future<void> snmp(List<String> args) async {
     ..fetchOfflineNotifications = false
     ..useAtChops = true;
 
-
   AtOnboardingService onboardingService =
       AtOnboardingServiceImpl(fromAtsign, atOnboardingConfig);
 
@@ -134,17 +138,19 @@ Future<void> snmp(List<String> args) async {
   while (!onboarded) {
     try {
       stdout.write(chalk.brightBlue('\r\x1b[KConnecting ... '));
-      await Future.delayed(Duration(milliseconds: 1000)); // Pause just long enough for the retry to be visible
+      await Future.delayed(Duration(
+          milliseconds:
+              1000)); // Pause just long enough for the retry to be visible
       onboarded = await onboardingService.authenticate();
     } catch (exception) {
-      stdout.write(chalk.brightRed('$exception. Will retry in ${retryDuration.inSeconds} seconds'));
+      stdout.write(chalk.brightRed(
+          '$exception. Will retry in ${retryDuration.inSeconds} seconds'));
     }
     if (!onboarded) {
       await Future.delayed(retryDuration);
     }
   }
   stdout.writeln(chalk.brightGreen('Connected'));
-
 
   // Current atClient is the one which the onboardingService just authenticated
   AtClient atClient = AtClientManager.getInstance().atClient;
@@ -156,8 +162,8 @@ Future<void> snmp(List<String> args) async {
       sessionBool = true;
       session.retries = 5;
 
-      await mainloop(_logger, nautel, session, atClient, atClient.notificationService,
-          fromAtsign, toAtsign, deviceName);
+      await mainloop(_logger, nautel, session, atClient,
+          atClient.notificationService, fromAtsign, toAtsign, deviceName,pollDelay);
     } catch (e) {
       _logger.severe(e);
     }
@@ -178,51 +184,53 @@ Future<void> mainloop(
     NotificationService notificationService,
     String fromAtsign,
     String toAtsign,
-    String deviceName) async {
+    String deviceName,
+    String pollDelay) async {
   int counter = 0;
   while (true) {
     nautel = await getOID(session, nautel, _logger);
     var t = nautel.toJson();
     var ts = (json.encode(t));
-    if (counter == 15) {
-    updatePublicAtsign(_logger, ts, atClient, fromAtsign, toAtsign, deviceName);
-    counter = 0;
-    }
-    counter++;
-    // only update the public side once in a while
-      updatePrivateAtsign(_logger, ts, atClient, notificationService,
-          fromAtsign, toAtsign, deviceName);
-    await Future.delayed(Duration(milliseconds: 500));
+    // if (counter == 15) {
+    //   updatePublicAtsign(
+    //       _logger, ts, atClient, fromAtsign, toAtsign, deviceName);
+    //   counter = 0;
+    // }
+    // counter++;
+    // // only update the public side once in a while
+    updatePrivateAtsign(_logger, ts, atClient, notificationService, fromAtsign,
+        toAtsign, deviceName);
+    await Future.delayed(Duration(milliseconds: int.parse(pollDelay)));
   }
 }
 
-void updatePublicAtsign(AtSignLogger _logger, String json, AtClient atClient,
-    String fromAtsign, String toAtsign, String deviceName) async {
-  var metaData = Metadata()
-    ..isPublic = true
-    ..isEncrypted = false
-    ..namespaceAware = true
-    // Is hidden not working in SDK as yet
-    // Will hide this public AtKey once available
-    //..isHidden = true
-    ..ttr = -1;
-  // Keep the key in place for 20 seconds
-  //..ttl = 20000;
+// void updatePublicAtsign(AtSignLogger _logger, String json, AtClient atClient,
+//     String fromAtsign, String toAtsign, String deviceName) async {
+//   var metaData = Metadata()
+//     ..isPublic = true
+//     ..isEncrypted = false
+//     ..namespaceAware = true
+//     // Is hidden not working in SDK as yet
+//     // Will hide this public AtKey once available
+//     //..isHidden = true
+//     ..ttr = -1;
+//   // Keep the key in place for 20 seconds
+//   //..ttl = 20000;
 
-  var atKey = AtKey()
-    ..key = deviceName
-    ..namespace = atClient.getPreferences()?.namespace
-    ..sharedBy = fromAtsign
-    ..metadata = metaData;
+//   var atKey = AtKey()
+//     ..key = deviceName
+//     ..namespace = atClient.getPreferences()?.namespace
+//     ..sharedBy = fromAtsign
+//     ..metadata = metaData;
 
-  // atClient.getPreferences();
+//   // atClient.getPreferences();
 
-  _logger.info(atKey.toString());
+//   _logger.info(atKey.toString());
 
-  atClient.put(atKey, json);
-  var b = await atClient.get(atKey);
-  _logger.info(b.toString());
-}
+//   atClient.put(atKey, json);
+//   var b = await atClient.get(atKey);
+//   _logger.info(b.toString());
+// }
 
 void updatePrivateAtsign(
     AtSignLogger _logger,
@@ -232,9 +240,8 @@ void updatePrivateAtsign(
     String fromAtsign,
     String toAtsign,
     String deviceName) async {
-
   try {
-     notificationService
+    notificationService
         .notify(NotificationParams.forText(json, toAtsign, shouldEncrypt: true),
             onSuccess: (notification) {
       _logger.info('SUCCESS:' + notification.toString());
