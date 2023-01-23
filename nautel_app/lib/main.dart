@@ -7,14 +7,13 @@ import 'package:flutter/material.dart';
 import 'package:nautel_app/screens/onboarding_screen.dart';
 import 'screens/home_screen.dart';
 
-import 'package:path_provider/path_provider.dart'
-    show getApplicationSupportDirectory;
+import 'package:path_provider/path_provider.dart';
+//    show getApplicationSupportDirectory;
 import 'package:window_manager/window_manager.dart';
 
-
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
   // Must add this line.
+  WidgetsFlutterBinding.ensureInitialized();
   if (kIsWeb) {
   } else {
     if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
@@ -62,8 +61,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   // * load the AtClientPreference in the background
-  Future<AtClientPreference> futurePreference = loadAtClientPreference();
-
+  late Future<AtClientPreference> futurePreference;
   @override
   Widget build(BuildContext context) {
     String firstScreen;
@@ -71,11 +69,11 @@ class _MyAppState extends State<MyApp> {
       firstScreen = HomeScreen.id;
     } else {
       firstScreen = OnboardingScreen.id;
+      futurePreference = loadAtClientPreference();
     }
     return MaterialApp(
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-            backgroundColor: Colors.blue, primarySwatch: Colors.green),
+        theme: ThemeData(backgroundColor: Colors.blue, primarySwatch: Colors.green),
         // * The onboarding screen (first screen)
         routes: {
           HomeScreen.id: (_) => HomeScreen(),

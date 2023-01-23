@@ -59,13 +59,13 @@ class _MyHomePageState extends State<MyHomePage> {
   Timer? timer;
 
   @override
-  void initState() {
+  void initState()  {
     super.initState();
     String deviceName = 'KRYZ';
     String nameSpace = 'kryz_9850';
     if (kIsWeb) {
-      final channel =
-          WebSocketChannel.connect(Uri.parse('ws://192.168.1.76:9850'));
+      var channel =
+          WebSocketChannel.connect(Uri.parse('wss://testkryz.shaduf.com'));
 
       channel.stream.listen((message) {
         // channel.sink.add('received!');
