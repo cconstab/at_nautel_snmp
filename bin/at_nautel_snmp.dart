@@ -191,46 +191,14 @@ Future<void> mainloop(
     nautel = await getOID(session, nautel, _logger);
     var t = nautel.toJson();
     var ts = (json.encode(t));
-    // if (counter == 15) {
-    //   updatePublicAtsign(
-    //       _logger, ts, atClient, fromAtsign, toAtsign, deviceName);
-    //   counter = 0;
-    // }
-    // counter++;
-    // // only update the public side once in a while
+
     updatePrivateAtsign(_logger, ts, atClient, notificationService, fromAtsign,
         toAtsign, deviceName);
     await Future.delayed(Duration(milliseconds: int.parse(pollDelay)));
   }
 }
 
-// void updatePublicAtsign(AtSignLogger _logger, String json, AtClient atClient,
-//     String fromAtsign, String toAtsign, String deviceName) async {
-//   var metaData = Metadata()
-//     ..isPublic = true
-//     ..isEncrypted = false
-//     ..namespaceAware = true
-//     // Is hidden not working in SDK as yet
-//     // Will hide this public AtKey once available
-//     //..isHidden = true
-//     ..ttr = -1;
-//   // Keep the key in place for 20 seconds
-//   //..ttl = 20000;
 
-//   var atKey = AtKey()
-//     ..key = deviceName
-//     ..namespace = atClient.getPreferences()?.namespace
-//     ..sharedBy = fromAtsign
-//     ..metadata = metaData;
-
-//   // atClient.getPreferences();
-
-//   _logger.info(atKey.toString());
-
-//   atClient.put(atKey, json);
-//   var b = await atClient.get(atKey);
-//   _logger.info(b.toString());
-// }
 
 void updatePrivateAtsign(
     AtSignLogger _logger,

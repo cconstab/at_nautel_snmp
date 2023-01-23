@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:intl/intl.dart';
 // import 'package:web_socket_channel/io.dart';
 // import 'package:web_socket_channel/status.dart' as status;
 
@@ -119,7 +120,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 " " +
                 widget.transmitter.frequency.toString() +
                 ' ' +
-                widget.transmitter.date.toString(),
+                DateTime.parse(widget.transmitter.date.toString()).toLocal().toString(),
             minFontSize: 3,
           ),
           actions: [
