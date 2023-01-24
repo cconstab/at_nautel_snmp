@@ -65,14 +65,8 @@ class _MyHomePageState extends State<MyHomePage> {
     String deviceName = 'KRYZ';
     String nameSpace = 'kryz_9850';
     if (kIsWeb) {
-      var channel =
-          WebSocketChannel.connect(Uri.parse('wss://ws.kryzradio.org'));
 
-      channel.stream.listen((message) {
-        var json = message;
-        lookupTransmitter(widget.transmitter, json);
-        setState(() {});
-      });
+      connectWs();
     } else {
       AtClientManager atClientManager = AtClientManager.getInstance();
       String? atSign = atClientManager.atClient.getCurrentAtSign();
@@ -95,6 +89,18 @@ class _MyHomePageState extends State<MyHomePage> {
         }
       }));
     }
+  }
+
+  void connectWs() {
+     var channel =
+          WebSocketChannel.connect(Uri.parse('wss://ws.kryzradio.org'));
+    channel.stream.listen((message) {
+      var json = message;
+      lookupTransmitter(widget.transmitter, json);
+      setState(() {});
+    }, 
+    // reconnnect if the WS gets disconnected (yay!)
+    onDone: connectWs);
   }
 
   @override
