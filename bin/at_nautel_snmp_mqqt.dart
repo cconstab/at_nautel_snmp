@@ -108,11 +108,11 @@ Future<void> snmpMqtt(List<String> args) async {
   //onboarding preference builder can be used to set onboardingService parameters
   AtOnboardingPreference atOnboardingConfig = AtOnboardingPreference()
     //..qrCodePath = 'etc/qrcode_blueamateurbinding.png'
-    ..hiveStoragePath = '$homeDirectory/.$nameSpace/$fromAtsign/storage'
+    ..hiveStoragePath = '$homeDirectory/.${nameSpace}mqtt/$fromAtsign/storage'
     ..namespace = nameSpace
-    ..downloadPath = '$homeDirectory/.$nameSpace/files'
+    ..downloadPath = '$homeDirectory/.${nameSpace}mqtt/files'
     ..isLocalStoreRequired = true
-    ..commitLogPath = '$homeDirectory/.$nameSpace/$fromAtsign/storage/commitLog'
+    ..commitLogPath = '$homeDirectory/.${nameSpace}mqtt/$fromAtsign/storage/commitLog'
     ..fetchOfflineNotifications = false
     //..cramSecret = '<your cram secret>';
     ..atKeysFilePath = atsignFile;
