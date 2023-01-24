@@ -25,7 +25,7 @@ class Transmitter {
       this.peakmodulation = '0',
       this.poweroutput = '0',
       this.powerreflected = '0',
-      this.date = '1970',
+      this.date = '1970-01-01 00:00:00.000000Z',
       this.swr = '0',
       this.meterFanspeed = '5000',
       this.meterHeatsinktemp = '0',

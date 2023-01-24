@@ -66,10 +66,9 @@ class _MyHomePageState extends State<MyHomePage> {
     String nameSpace = 'kryz_9850';
     if (kIsWeb) {
       var channel =
-          WebSocketChannel.connect(Uri.parse('wss://testkryz.shaduf.com'));
+          WebSocketChannel.connect(Uri.parse('wss://ws.kryzradio.org'));
 
       channel.stream.listen((message) {
-        // channel.sink.add('received!');
         var json = message;
         lookupTransmitter(widget.transmitter, json);
         setState(() {});
@@ -324,7 +323,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 " " +
                 widget.transmitter.frequency.toString() +
                 ' ' +
-                widget.transmitter.date.toString(),
+                DateFormat.Md().add_jms().format(DateTime.parse(widget.transmitter.date.toString()).toLocal()).toString(),
             minFontSize: 3,
           ),
         ),
