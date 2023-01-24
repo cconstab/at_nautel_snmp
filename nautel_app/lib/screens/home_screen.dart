@@ -120,7 +120,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 " " +
                 widget.transmitter.frequency.toString() +
                 ' ' +
-                DateTime.parse(widget.transmitter.date.toString()).toString(),
+                DateFormat.Md().add_jms().format(DateTime.parse(widget.transmitter.date.toString()).toLocal()).toString(),
             minFontSize: 3,
           ),
           actions: [
