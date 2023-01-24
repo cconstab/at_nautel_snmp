@@ -17,7 +17,7 @@ Future<String> displayOID(Snmp snmp, String val, int div, String measure) async 
 
 Future<Transmitter> getOID(Snmp session, Transmitter kryz, AtSignLogger _logger) async {
   var date = DateFormat.Md().add_jms().format(DateTime.now().toUtc());
-  kryz.date = date;
+  kryz.date = "$date Z";
   //sleep(Duration(seconds: 1));
   await displayOID(session, '1.3.6.1.4.1.28142.1.300.1025.291.0', 1000, ' Div Peak').then((value) async {
     _logger.info('Div Peak : $value');
