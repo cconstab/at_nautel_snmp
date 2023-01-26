@@ -153,9 +153,6 @@ Future<void> snmpMqtt(List<String> args) async {
 
   mqttSession.pongCallback = pong;
 
-  // await mqttSession.connect(mqttUsername, 'KRYZ');
-  // print(mqttSession.connectionStatus);
-
   /// Create a connection message to use or use the default one. The default one sets the
   /// client identifier, any supplied username/password and clean session,
   /// an example of a specific one below.
@@ -195,40 +192,23 @@ Future<void> snmpMqtt(List<String> args) async {
     exit(-1);
   }
 
-  // notificationService.subscribe(regex: '$deviceName.$nameSpace@', shouldDecrypt: true).listen(((notification) async {
-  //   String keyAtsign = notification.key;
-  //   //Uint8List buffer;
-  //   keyAtsign = keyAtsign.replaceAll(notification.to + ':', '');
-  //   keyAtsign = keyAtsign.replaceAll('.' + nameSpace + notification.from, '');
-  //   if (keyAtsign == deviceName) {
-  //     _logger.info('SNMP update recieved from ' + notification.from + ' notification id : ' + notification.id);
-  //     var json = notification.value!;
-  //     print(json);
+
   String? atSign = AtClientManager.getInstance().atClient.getCurrentAtSign();
+
   notificationService
       .subscribe(
           regex: '$atSign:{"stationName":"$deviceName"', shouldDecrypt: true)
       .listen(((notification) async {
-    print(notification.toString());
     String? json = notification.key;
     json = json.replaceFirst('$atSign:', '');
     if (notification.from == '@$nameSpace') {
       _logger.info(
           'SNMP update recieved from ${notification.from} notification id : ${notification.id}');
-      print(json);
-
-      await mqttSession.connect();
-
-      if (mqttSession.connectionStatus!.state ==
-          MqttConnectionState.connected) {
-        _logger.info('Mosquitto client connected sending message');
+        _logger.info('Mosquitto client connected sending message: $json');
         mqttSession.publishMessage(
             mqttTopic, MqttQos.atMostOnce, builder.addString(json).payload!,
             retain: false);
         builder.clear();
-      } else {
-        await mqttSession.connect();
-      }
     }
   }),
           onError: (e) => _logger.severe('Notification Failed:' + e.toString()),
