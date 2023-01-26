@@ -112,7 +112,8 @@ Future<void> snmpMqtt(List<String> args) async {
     ..namespace = nameSpace
     ..downloadPath = '$homeDirectory/.${nameSpace}mqtt/files'
     ..isLocalStoreRequired = true
-    ..commitLogPath = '$homeDirectory/.${nameSpace}mqtt/$fromAtsign/storage/commitLog'
+    ..commitLogPath =
+        '$homeDirectory/.${nameSpace}mqtt/$fromAtsign/storage/commitLog'
     ..fetchOfflineNotifications = false
     //..cramSecret = '<your cram secret>';
     ..atKeysFilePath = atsignFile;
@@ -170,15 +171,22 @@ Future<void> snmpMqtt(List<String> args) async {
   /// in some circumstances the broker will just disconnect us, see the spec about this, we however will
   /// never send malformed messages.
   try {
+    mqttSession.autoReconnect;
     await mqttSession.connect();
   } on NoConnectionException catch (e) {
     // Raised by the client when connection fails.
     _logger.severe(' Mosquitto client exception - $e');
     mqttSession.disconnect();
+    exit(-1);
   } on SocketException catch (e) {
     // Raised by the socket layer
     _logger.severe(' Mosquitto socket exception - $e');
     mqttSession.disconnect();
+    exit(-1);
+  } on Exception catch (e) {
+    _logger.severe(' Mosquitto unknown exception - $e');
+    mqttSession.disconnect();
+    exit(-1);
   }
 
   /// Check we are connected
@@ -192,7 +200,6 @@ Future<void> snmpMqtt(List<String> args) async {
     exit(-1);
   }
 
-
   String? atSign = AtClientManager.getInstance().atClient.getCurrentAtSign();
 
   notificationService
@@ -204,11 +211,16 @@ Future<void> snmpMqtt(List<String> args) async {
     if (notification.from == '@$nameSpace') {
       _logger.info(
           'SNMP update recieved from ${notification.from} notification id : ${notification.id}');
-        _logger.info('Mosquitto client connected sending message: $json');
+      _logger.info('Mosquitto client connected sending message: $json');
+      try {
+        //await mqttSession.connect();
         mqttSession.publishMessage(
             mqttTopic, MqttQos.atMostOnce, builder.addString(json).payload!,
             retain: false);
         builder.clear();
+      } catch (e) {
+        _logger.info('Error sending mqtt message: ' + e.toString());
+      }
     }
   }),
           onError: (e) => _logger.severe('Notification Failed:' + e.toString()),
