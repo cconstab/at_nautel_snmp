@@ -19,6 +19,7 @@ dependencies:
   timer_builder: ^2.0.0
   new_gradient_app_bar: ^0.2.0
   window_manager: ^0.3.0
+  web_socket_channel: ^2.3.0
 
 
 dev_dependencies:
