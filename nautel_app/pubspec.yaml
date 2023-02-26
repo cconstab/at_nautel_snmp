@@ -3,29 +3,29 @@ description: A new Flutter project
 version: 1.0.0+1
 
 environment:
-  sdk: ">=2.12.1 <3.0.0"
+  sdk: ">=2.12.1 <4.0.0"
 
 dependencies:
-  flutter:
-    sdk: flutter
-  at_client_mobile: ^3.0.32
+  # flutter:
+  #   sdk: flutter
+  at_client_mobile: ^3.2.7
   at_app_flutter: ^5.1.0
   at_utils: ^3.0.0
   path_provider: ^2.0.5
   flutter_dotenv: ^5.0.2
   auto_size_text: ^3.0.0
-  intl: ^0.17.0
+  intl: ^0.18.0
   pretty_gauge: ^1.0.1
   timer_builder: ^2.0.0
   new_gradient_app_bar: ^0.2.0
   window_manager: ^0.3.0
-  web_socket_channel: ^2.3.0
+  biometric_storage: ^4.1.3
 
 
 dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^1.0.0
+  # flutter_test:
+  #   sdk: flutter
+  flutter_lints: ^2.0.0
   icons_launcher: ^2.0.3
 
 
@@ -35,12 +35,13 @@ flutter:
   assets:
     - .env
 
-#dependency_overrides:
-  # at_client_mobile:
-  #   git:
-  #     url: https://github.com/atsign-foundation/at_client_sdk.git
-  #     ref: hotfix/window-limit-data-length
-  #     path: at_client_mobile
+dependency_overrides:
+  at_client:
+    git:
+      url: https://github.com/atsign-foundation/at_client_sdk.git
+      ref: gkc-fix-issue-893
+      path: packages/at_client
+  biometric_storage: ^4.1.3
 
 
 icons_launcher:

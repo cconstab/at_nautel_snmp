@@ -135,6 +135,7 @@ class _MyHomePageState extends State<MyHomePage> {
               icon: const Icon(
                 Icons.menu,
                 size: 20,
+                color: Colors.black,
               ),
               onSelected: (String result) {
                 switch (result) {
