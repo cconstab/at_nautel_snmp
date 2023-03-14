@@ -40,6 +40,8 @@ Future<void> snmpMqtt(List<String> args) async {
   String deviceName;
   String mqttDeviceName;
   String mqttJsonWrapper;
+  String mqttPort;
+  bool mqttTls;
 
   InternetAddress target;
   final AtSignLogger _logger = AtSignLogger(' nautel ');
@@ -49,31 +51,22 @@ Future<void> snmpMqtt(List<String> args) async {
   var parser = ArgParser();
 // Args
   parser.addOption('key-file',
-      abbr: 'k',
-      mandatory: false,
-      help: 'transmitters @sign\'s atKeys file if not in ~/.atsign/keys/');
-  parser.addOption('receiver-atsign',
-      abbr: 'r', mandatory: true, help: '@sign that recieves notifications');
-  parser.addOption('device-name',
-      abbr: 'n', mandatory: true, help: 'Device name, used as AtKey:key');
-  parser.addOption('mqtt-device-name',
-      abbr: 'd', mandatory: false, help: 'MQTT device name', defaultsTo: '');
-  parser.addOption('mqtt-host',
-      abbr: 'm', mandatory: true, help: 'MQQT server hostname');
-  parser.addOption('mqtt-username',
-      abbr: 'u', mandatory: true, help: 'MQQT server username');
-  parser.addOption('mqtt-password',
-      abbr: 'p',
-      mandatory: false,
-      help: 'MQQT server password',
-      defaultsTo: '');
-  parser.addOption('mqtt-topic',
-      abbr: 't', mandatory: false, help: 'MQTT subjectname', defaultsTo: '');
+      abbr: 'k', mandatory: false, help: 'transmitters @sign\'s atKeys file if not in ~/.atsign/keys/');
+  parser.addOption('receiver-atsign', abbr: 'r', mandatory: true, help: '@sign that recieves notifications');
+  parser.addOption('device-name', abbr: 'n', mandatory: true, help: 'Device name, used as AtKey:key');
+  parser.addOption('mqtt-device-name', abbr: 'd', mandatory: false, help: 'MQTT device name', defaultsTo: '');
+  parser.addOption('mqtt-host', abbr: 'm', mandatory: true, help: 'MQQT server hostname');
+  parser.addOption('mqtt-username', abbr: 'u', mandatory: true, help: 'MQQT server username');
+  parser.addOption('mqtt-password', abbr: 'p', mandatory: false, help: 'MQQT server password', defaultsTo: '');
+  parser.addOption('mqtt-topic', abbr: 't', mandatory: false, help: 'MQTT subjectname', defaultsTo: '');
+  parser.addOption('mqtt-port',
+      abbr: 'o', mandatory: false, help: 'MQQT server port number default 8883', defaultsTo: '8883');
+  parser.addFlag('secure', abbr: 'i', help: 'Use TLS for mqqt connection', defaultsTo: true);
+
   parser.addOption('mqtt-json-wrapper',
       abbr: 'w',
       mandatory: false,
-      help:
-          'MQTT json wrapper useful to create {"<data>": json} for IoT hubs that need it where option is "data"',
+      help: 'MQTT json wrapper useful to create {"<data>": json} for IoT hubs that need it where option is "data"',
       defaultsTo: '');
   parser.addFlag('verbose', abbr: 'v', help: 'More logging');
 
@@ -96,6 +89,8 @@ Future<void> snmpMqtt(List<String> args) async {
     deviceName = results['device-name'];
     mqttDeviceName = results['mqtt-device-name'];
     mqttJsonWrapper = results['mqtt-json-wrapper'];
+    mqttPort = results['mqtt-port'];
+    mqttTls = results['secure'];
 
     var targetlist = await InternetAddress.lookup(mqttIP);
     target = targetlist[0];
@@ -131,14 +126,12 @@ Future<void> snmpMqtt(List<String> args) async {
     ..namespace = nameSpace
     ..downloadPath = '$homeDirectory/.${nameSpace}mqtt/files'
     ..isLocalStoreRequired = true
-    ..commitLogPath =
-        '$homeDirectory/.${nameSpace}mqtt/$fromAtsign/storage/commitLog'
+    ..commitLogPath = '$homeDirectory/.${nameSpace}mqtt/$fromAtsign/storage/commitLog'
     ..fetchOfflineNotifications = false
     //..cramSecret = '<your cram secret>';
     ..atKeysFilePath = atsignFile;
 
-  AtOnboardingService onboardingService =
-      AtOnboardingServiceImpl(fromAtsign, atOnboardingConfig);
+  AtOnboardingService onboardingService = AtOnboardingServiceImpl(fromAtsign, atOnboardingConfig);
 
   await onboardingService.authenticate();
 
@@ -146,8 +139,7 @@ Future<void> snmpMqtt(List<String> args) async {
 
   AtClientManager atClientManager = AtClientManager.getInstance();
 
-  NotificationService notificationService =
-      atClientManager.atClient.notificationService;
+  NotificationService notificationService = atClientManager.atClient.notificationService;
 
 // Keep an eye on connectivity and report failures if we see them
   ConnectivityListener().subscribe().listen((isConnected) {
@@ -159,12 +151,11 @@ Future<void> snmpMqtt(List<String> args) async {
   });
 
 // Set up MQTT
-  mqttSession =
-      MqttServerClient(mqttIP, mqttDeviceName, maxConnectionAttempts: 10);
+  mqttSession = MqttServerClient.withPort(mqttIP, mqttDeviceName, int.parse(mqttPort), maxConnectionAttempts: 10);
   final builder = MqttClientPayloadBuilder();
 
   mqttSession.setProtocolV311();
-  mqttSession.secure = true;
+  mqttSession.secure = mqttTls;
   mqttSession.keepAlivePeriod = 20;
   mqttSession.autoReconnect = true;
   // Pong Callback
@@ -215,18 +206,15 @@ Future<void> snmpMqtt(List<String> args) async {
     _logger.info(' Mosquitto client connected');
   } else {
     /// Use status here rather than state if you also want the broker return code.
-    _logger.severe(
-        ' Mosquitto client connection failed - disconnecting, status is ${mqttSession.connectionStatus}');
+    _logger.severe(' Mosquitto client connection failed - disconnecting, status is ${mqttSession.connectionStatus}');
     mqttSession.disconnect();
     exit(-1);
   }
 
   String? atSign = AtClientManager.getInstance().atClient.getCurrentAtSign();
 
-  notificationService
-      .subscribe(
-          regex: '$atSign:{"stationName":"$deviceName"', shouldDecrypt: true)
-      .listen(((notification) async {
+  notificationService.subscribe(regex: '$atSign:{"stationName":"$deviceName"', shouldDecrypt: true).listen(
+      ((notification) async {
     String? json = notification.key;
     if (mqttJsonWrapper == '') {
       json = json.replaceFirst('$atSign:', '');
@@ -236,20 +224,17 @@ Future<void> snmpMqtt(List<String> args) async {
     }
 
     if (notification.from == '@$nameSpace') {
-      _logger.info(
-          'SNMP update recieved from ${notification.from} notification id : ${notification.id}');
+      _logger.info('SNMP update recieved from ${notification.from} notification id : ${notification.id}');
       _logger.info('Mosquitto client connected sending message: $json');
       try {
         //await mqttSession.connect();
-        mqttSession.publishMessage(
-            mqttTopic, MqttQos.atMostOnce, builder.addString(json).payload!,
-            retain: false);
+        mqttSession.publishMessage(mqttTopic, MqttQos.atMostOnce, builder.addString(json).payload!, retain: false);
         builder.clear();
       } catch (e) {
         _logger.info('Error sending mqtt message: ' + e.toString());
       }
     }
   }),
-          onError: (e) => _logger.severe('Notification Failed:' + e.toString()),
-          onDone: () => _logger.info('Notification listener stopped'));
+      onError: (e) => _logger.severe('Notification Failed:' + e.toString()),
+      onDone: () => _logger.info('Notification listener stopped'));
 }
