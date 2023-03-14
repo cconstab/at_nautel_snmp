@@ -231,10 +231,10 @@ Future<void> snmpMqtt(List<String> args) async {
         mqttSession.publishMessage(mqttTopic, MqttQos.atMostOnce, builder.addString(json).payload!, retain: false);
         builder.clear();
       } catch (e) {
-        _logger.info('Error sending mqtt message: ' + e.toString());
+        _logger.info('Error sending mqtt message: $e');
       }
     }
   }),
-      onError: (e) => _logger.severe('Notification Failed:' + e.toString()),
+      onError: (e) => _logger.severe('Notification Failed:$e'),
       onDone: () => _logger.info('Notification listener stopped'));
 }
