@@ -42,6 +42,10 @@ Future<void> snmpMqtt(List<String> args) async {
   String mqttJsonWrapper;
   String mqttPort;
   bool mqttTls;
+  String trustedCertsFile;
+  String certFile;
+  String privateKeyFile;
+  bool useCerts;
 
   InternetAddress target;
   final AtSignLogger _logger = AtSignLogger(' nautel ');
@@ -59,6 +63,12 @@ Future<void> snmpMqtt(List<String> args) async {
   parser.addOption('mqtt-username', abbr: 'u', mandatory: true, help: 'MQQT server username');
   parser.addOption('mqtt-password', abbr: 'p', mandatory: false, help: 'MQQT server password', defaultsTo: '');
   parser.addOption('mqtt-topic', abbr: 't', mandatory: false, help: 'MQTT subjectname', defaultsTo: '');
+  parser.addOption('mqtt-trusted-certs', mandatory: false, help: 'MQTT TLS trusted CA file', defaultsTo: '');
+  parser.addOption('mqtt-cert', mandatory: false, help: 'MQTT TLS certificate file', defaultsTo: '');
+  parser.addOption('mqtt-cert-private-key', mandatory: false, help: 'MQTT TLS certificate file', defaultsTo: '');
+  parser.addFlag('use-certificates',
+      abbr: 's', help: 'Use/specify certficates for TLS connections e.g. AWS IoT', defaultsTo: false);
+
   parser.addOption('mqtt-port',
       abbr: 'o', mandatory: false, help: 'MQQT server port number default 8883', defaultsTo: '8883');
   parser.addFlag('secure', abbr: 'i', help: 'Use TLS for mqqt connection', defaultsTo: true);
@@ -91,6 +101,10 @@ Future<void> snmpMqtt(List<String> args) async {
     mqttJsonWrapper = results['mqtt-json-wrapper'];
     mqttPort = results['mqtt-port'];
     mqttTls = results['secure'];
+    useCerts = results['use-certificates'];
+    trustedCertsFile = results['mqtt-trusted-certs'];
+    certFile = results['mqtt-cert'];
+    privateKeyFile = results['mqtt-cert-private-key'];
 
     var targetlist = await InternetAddress.lookup(mqttIP);
     target = targetlist[0];
@@ -156,6 +170,12 @@ Future<void> snmpMqtt(List<String> args) async {
 
   mqttSession.setProtocolV311();
   mqttSession.secure = mqttTls;
+    if (useCerts) {
+    mqttSession.securityContext.setTrustedCertificates(trustedCertsFile);
+    mqttSession.securityContext.setClientAuthorities(trustedCertsFile);
+    mqttSession.securityContext.useCertificateChain(certFile);
+    mqttSession.securityContext.usePrivateKey(privateKeyFile);
+  }
   mqttSession.keepAlivePeriod = 20;
   mqttSession.autoReconnect = true;
   // Pong Callback
