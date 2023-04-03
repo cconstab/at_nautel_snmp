@@ -60,7 +60,7 @@ Future<void> snmpMqtt(List<String> args) async {
   parser.addOption('device-name', abbr: 'n', mandatory: true, help: 'Device name, used as AtKey:key');
   parser.addOption('mqtt-device-name', abbr: 'd', mandatory: false, help: 'MQTT device name', defaultsTo: '');
   parser.addOption('mqtt-host', abbr: 'm', mandatory: true, help: 'MQQT server hostname');
-  parser.addOption('mqtt-username', abbr: 'u', mandatory: true, help: 'MQQT server username');
+  parser.addOption('mqtt-username', abbr: 'u', mandatory: false, help: 'MQQT server username', defaultsTo: '');
   parser.addOption('mqtt-password', abbr: 'p', mandatory: false, help: 'MQQT server password', defaultsTo: '');
   parser.addOption('mqtt-topic', abbr: 't', mandatory: false, help: 'MQTT subjectname', defaultsTo: '');
   parser.addOption('mqtt-trusted-certs', mandatory: false, help: 'MQTT TLS trusted CA file', defaultsTo: '');
@@ -133,28 +133,6 @@ Future<void> snmpMqtt(List<String> args) async {
     AtSignLogger.root_level = 'INFO';
   }
 
-  //onboarding preference builder can be used to set onboardingService parameters
-  AtOnboardingPreference atOnboardingConfig = AtOnboardingPreference()
-    //..qrCodePath = 'etc/qrcode_blueamateurbinding.png'
-    ..hiveStoragePath = '$homeDirectory/.${nameSpace}mqtt/$fromAtsign/$mqttIP/storage'
-    ..namespace = nameSpace
-    ..downloadPath = '$homeDirectory/.${nameSpace}mqtt/files'
-    ..isLocalStoreRequired = true
-    ..commitLogPath = '$homeDirectory/.${nameSpace}mqtt/$fromAtsign/$mqttIP/storage/commitLog'
-    ..fetchOfflineNotifications = false
-    //..cramSecret = '<your cram secret>';
-    ..atKeysFilePath = atsignFile;
-
-  AtOnboardingService onboardingService = AtOnboardingServiceImpl(fromAtsign, atOnboardingConfig);
-
-  await onboardingService.authenticate();
-
-  // var atClient = await onboardingService.getAtClient();
-
-  AtClientManager atClientManager = AtClientManager.getInstance();
-
-  NotificationService notificationService = atClientManager.atClient.notificationService;
-
 // Keep an eye on connectivity and report failures if we see them
   ConnectivityListener().subscribe().listen((isConnected) {
     if (isConnected) {
@@ -170,9 +148,9 @@ Future<void> snmpMqtt(List<String> args) async {
 
   mqttSession.setProtocolV311();
   mqttSession.secure = mqttTls;
-    if (useCerts) {
-    mqttSession.securityContext.setTrustedCertificates(trustedCertsFile);
-    mqttSession.securityContext.setClientAuthorities(trustedCertsFile);
+  if (useCerts) {
+    //mqttSession.securityContext.setTrustedCertificates(trustedCertsFile);
+    //mqttSession.securityContext.setClientAuthorities(trustedCertsFile);
     mqttSession.securityContext.useCertificateChain(certFile);
     mqttSession.securityContext.usePrivateKey(privateKeyFile);
   }
@@ -189,15 +167,19 @@ Future<void> snmpMqtt(List<String> args) async {
   /// Create a connection message to use or use the default one. The default one sets the
   /// client identifier, any supplied username/password and clean session,
   /// an example of a specific one below.
-  final connMess = MqttConnectMessage()
-      .withClientIdentifier(mqttDeviceName)
-      // .withWillTopic('willtopic') // If you set this you must set a will message
-      // .withWillMessage('My Will message')
-      .startClean() // Non persistent session for testing
-      .authenticateAs(mqttUsername, mqttPassword)
-      .withWillQos(MqttQos.atLeastOnce);
-  _logger.info('Mosquitto client connecting....');
-  mqttSession.connectionMessage = connMess;
+  MqttConnectMessage connMess;
+  if (useCerts) {
+    connMess = MqttConnectMessage().withClientIdentifier(mqttDeviceName).withWillQos(MqttQos.atLeastOnce);
+    _logger.info('Mosquitto client connecting....');
+    mqttSession.connectionMessage = connMess;
+  } else {
+    connMess = MqttConnectMessage()
+        .withClientIdentifier(mqttDeviceName)
+        .authenticateAs(mqttUsername, mqttPassword)
+        .withWillQos(MqttQos.atLeastOnce);
+    _logger.info('Mosquitto client connecting....');
+    mqttSession.connectionMessage = connMess;
+  }
 
   /// Connect the client, any errors here are communicated by raising of the appropriate exception. Note
   /// in some circumstances the broker will just disconnect us, see the spec about this, we however will
@@ -224,6 +206,10 @@ Future<void> snmpMqtt(List<String> args) async {
   /// Check we are connected
   if (mqttSession.connectionStatus!.state == MqttConnectionState.connected) {
     _logger.info(' Mosquitto client connected');
+    mqttSession.publishMessage(
+        mqttTopic, MqttQos.atMostOnce, builder.addString('{  "message": "Hello from Atsign IoT console 3"}').payload!,
+        retain: false);
+    print('sent');
   } else {
     /// Use status here rather than state if you also want the broker return code.
     _logger.severe(' Mosquitto client connection failed - disconnecting, status is ${mqttSession.connectionStatus}');
@@ -231,10 +217,31 @@ Future<void> snmpMqtt(List<String> args) async {
     exit(-1);
   }
 
-  String? atSign = AtClientManager.getInstance().atClient.getCurrentAtSign();
+  //onboarding preference builder can be used to set onboardingService parameters
+  AtOnboardingPreference atOnboardingConfig = AtOnboardingPreference()
+    //..qrCodePath = 'etc/qrcode_blueamateurbinding.png'
+    ..hiveStoragePath = '$homeDirectory/.${nameSpace}mqtt/$fromAtsign/$mqttIP/storage'
+    ..namespace = nameSpace
+    ..downloadPath = '$homeDirectory/.${nameSpace}mqtt/files'
+    ..isLocalStoreRequired = true
+    ..commitLogPath = '$homeDirectory/.${nameSpace}mqtt/$fromAtsign/$mqttIP/storage/commitLog'
+    ..fetchOfflineNotifications = false
+    //..cramSecret = '<your cram secret>';
+    ..atKeysFilePath = atsignFile;
 
+  AtOnboardingService onboardingService = AtOnboardingServiceImpl(fromAtsign, atOnboardingConfig);
+
+  await onboardingService.authenticate();
+
+  // var atClient = await onboardingService.getAtClient();
+
+  AtClientManager atClientManager = AtClientManager.getInstance();
+
+  NotificationService notificationService = atClientManager.atClient.notificationService;
+  String? atSign = AtClientManager.getInstance().atClient.getCurrentAtSign();
   notificationService.subscribe(regex: '$atSign:{"stationName":"$deviceName"', shouldDecrypt: true).listen(
       ((notification) async {
+    print(notification.toString());
     String? json = notification.key;
     if (mqttJsonWrapper == '') {
       json = json.replaceFirst('$atSign:', '');
@@ -242,7 +249,7 @@ Future<void> snmpMqtt(List<String> args) async {
       json = json.replaceFirst('$atSign:', '{"$mqttJsonWrapper":');
       json = '$json}';
     }
-
+    print(json);
     if (notification.from == '@$nameSpace') {
       _logger.info('SNMP update recieved from ${notification.from} notification id : ${notification.id}');
       _logger.info('Mosquitto client connected sending message: $json');
@@ -250,6 +257,7 @@ Future<void> snmpMqtt(List<String> args) async {
         //await mqttSession.connect();
         mqttSession.publishMessage(mqttTopic, MqttQos.atMostOnce, builder.addString(json).payload!, retain: false);
         builder.clear();
+        print(json);
       } catch (e) {
         _logger.info('Error sending mqtt message: $e');
       }
