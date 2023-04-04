@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:isolate';
 
 import 'dart:async';
 
@@ -17,7 +18,7 @@ import 'package:at_nautel_snmp/home_directory.dart';
 import 'package:at_nautel_snmp/check_file_exists.dart';
 
 var pongCount = 0; // Pong counter
-var mqttSession = MqttServerClient('test.mosquitto.org', '');
+late MqttServerClient mqttSession;
 
 void main(List<String> args) async {
   //starting secondary in a zone
@@ -142,80 +143,31 @@ Future<void> snmpMqtt(List<String> args) async {
     }
   });
 
-// Set up MQTT
-  mqttSession = MqttServerClient.withPort(mqttIP, mqttDeviceName, int.parse(mqttPort), maxConnectionAttempts: 10);
-  final builder = MqttClientPayloadBuilder();
+  ReceivePort myReceivePort = ReceivePort();
+  ReceivePort pubReceivePort = ReceivePort();
 
-  mqttSession.setProtocolV311();
-  mqttSession.secure = mqttTls;
-  if (useCerts) {
-    //mqttSession.securityContext.setTrustedCertificates(trustedCertsFile);
-    //mqttSession.securityContext.setClientAuthorities(trustedCertsFile);
-    mqttSession.securityContext.useCertificateChain(certFile);
-    mqttSession.securityContext.usePrivateKey(privateKeyFile);
-  }
-  mqttSession.keepAlivePeriod = 20;
-  mqttSession.autoReconnect = true;
-  // Pong Callback
-  void pong() {
-    _logger.info('Mosquitto Ping response client callback invoked');
-    pongCount++;
-  }
+  Isolate.spawn<SendPort>(mqttSetup, myReceivePort.sendPort);
 
-  mqttSession.pongCallback = pong;
+  List<SendPort> sendPorts = await myReceivePort.first;
 
-  /// Create a connection message to use or use the default one. The default one sets the
-  /// client identifier, any supplied username/password and clean session,
-  /// an example of a specific one below.
-  MqttConnectMessage connMess;
-  if (useCerts) {
-    connMess = MqttConnectMessage().withClientIdentifier(mqttDeviceName).withWillQos(MqttQos.atLeastOnce);
-    _logger.info('Mosquitto client connecting....');
-    mqttSession.connectionMessage = connMess;
-  } else {
-    connMess = MqttConnectMessage()
-        .withClientIdentifier(mqttDeviceName)
-        .authenticateAs(mqttUsername, mqttPassword)
-        .withWillQos(MqttQos.atLeastOnce);
-    _logger.info('Mosquitto client connecting....');
-    mqttSession.connectionMessage = connMess;
-  }
+  SendPort mySendPort = sendPorts[0];
+  SendPort pubSendPort = sendPorts[1];
 
-  /// Connect the client, any errors here are communicated by raising of the appropriate exception. Note
-  /// in some circumstances the broker will just disconnect us, see the spec about this, we however will
-  /// never send malformed messages.
-  try {
-    mqttSession.autoReconnect;
-    await mqttSession.connect();
-  } on NoConnectionException catch (e) {
-    // Raised by the client when connection fails.
-    _logger.severe(' Mosquitto client exception - $e');
-    mqttSession.disconnect();
-    exit(-1);
-  } on SocketException catch (e) {
-    // Raised by the socket layer
-    _logger.severe(' Mosquitto socket exception - $e');
-    mqttSession.disconnect();
-    exit(-1);
-  } on Exception catch (e) {
-    _logger.severe(' Mosquitto unknown exception - $e');
-    mqttSession.disconnect();
-    exit(-1);
-  }
-
-  /// Check we are connected
-  if (mqttSession.connectionStatus!.state == MqttConnectionState.connected) {
-    _logger.info(' Mosquitto client connected');
-    mqttSession.publishMessage(
-        mqttTopic, MqttQos.atMostOnce, builder.addString('{  "message": "Hello from Atsign IoT console 3"}').payload!,
-        retain: false);
-    print('sent');
-  } else {
-    /// Use status here rather than state if you also want the broker return code.
-    _logger.severe(' Mosquitto client connection failed - disconnecting, status is ${mqttSession.connectionStatus}');
-    mqttSession.disconnect();
-    exit(-1);
-  }
+  mySendPort.send(
+    [
+      mqttTls.toString(),
+      mqttIP,
+      mqttDeviceName,
+      mqttPort,
+      useCerts.toString(),
+      certFile,
+      privateKeyFile,
+      mqttUsername,
+      mqttPassword,
+      mqttTopic,
+      pubReceivePort.sendPort
+    ],
+  );
 
   //onboarding preference builder can be used to set onboardingService parameters
   AtOnboardingPreference atOnboardingConfig = AtOnboardingPreference()
@@ -236,7 +188,7 @@ Future<void> snmpMqtt(List<String> args) async {
   // var atClient = await onboardingService.getAtClient();
 
   AtClientManager atClientManager = AtClientManager.getInstance();
-
+  final builder = MqttClientPayloadBuilder();
   NotificationService notificationService = atClientManager.atClient.notificationService;
   String? atSign = AtClientManager.getInstance().atClient.getCurrentAtSign();
   notificationService.subscribe(regex: '$atSign:{"stationName":"$deviceName"', shouldDecrypt: true).listen(
@@ -255,7 +207,8 @@ Future<void> snmpMqtt(List<String> args) async {
       _logger.info('Mosquitto client connected sending message: $json');
       try {
         //await mqttSession.connect();
-        mqttSession.publishMessage(mqttTopic, MqttQos.atMostOnce, builder.addString(json).payload!, retain: false);
+        //mqttSession.publishMessage(mqttTopic, MqttQos.atMostOnce, builder.addString(json).payload!, retain: false);
+        pubSendPort.send(json);
         builder.clear();
         print(json);
       } catch (e) {
@@ -265,4 +218,101 @@ Future<void> snmpMqtt(List<String> args) async {
   }),
       onError: (e) => _logger.severe('Notification Failed:$e'),
       onDone: () => _logger.info('Notification listener stopped'));
+}
+
+Future<void> mqttSetup(SendPort mySendPort) async {
+  ReceivePort myReceivePort = ReceivePort();
+  ReceivePort pubReceivePort = ReceivePort();
+  mySendPort.send([myReceivePort.sendPort, pubReceivePort.sendPort]);
+  List message = await myReceivePort.first as List;
+  bool mqttTls = message[0] == 'true';
+  String mqttIP = message[1];
+  String mqttDeviceName = message[2];
+  String mqttPort = message[3];
+  bool useCerts = message[4] == 'true';
+  String certFile = message[5];
+  String privateKeyFile = message[6];
+  String mqttUsername = message[7];
+  String mqttPassword = message[8];
+  String mqttTopic = message[9];
+
+  final AtSignLogger logger = AtSignLogger(' mqtt ');
+  logger.hierarchicalLoggingEnabled = true;
+  logger.logger.level = Level.WARNING;
+  // Set up MQTT
+  mqttSession = MqttServerClient.withPort(mqttIP, mqttDeviceName, int.parse(mqttPort), maxConnectionAttempts: 10);
+  final builder = MqttClientPayloadBuilder();
+
+  mqttSession.setProtocolV311();
+  mqttSession.secure = mqttTls;
+  if (useCerts) {
+    //mqttSession.securityContext.setTrustedCertificates(trustedCertsFile);
+    //mqttSession.securityContext.setClientAuthorities(trustedCertsFile);
+    mqttSession.securityContext.useCertificateChain(certFile);
+    mqttSession.securityContext.usePrivateKey(privateKeyFile);
+  }
+  mqttSession.keepAlivePeriod = 20;
+  mqttSession.autoReconnect = true;
+  // Pong Callback
+  void pong() {
+    logger.info('Mosquitto Ping response client callback invoked');
+    pongCount++;
+  }
+
+  mqttSession.pongCallback = pong;
+
+  /// Create a connection message to use or use the default one. The default one sets the
+  /// client identifier, any supplied username/password and clean session,
+  /// an example of a specific one below.
+  MqttConnectMessage connMess;
+  if (useCerts) {
+    connMess = MqttConnectMessage().withClientIdentifier(mqttDeviceName).withWillQos(MqttQos.atLeastOnce);
+    logger.info('Mosquitto client connecting....');
+    mqttSession.connectionMessage = connMess;
+  } else {
+    connMess = MqttConnectMessage()
+        .withClientIdentifier(mqttDeviceName)
+        .authenticateAs(mqttUsername, mqttPassword)
+        .withWillQos(MqttQos.atLeastOnce);
+    logger.info('Mosquitto client connecting....');
+    mqttSession.connectionMessage = connMess;
+  }
+
+  /// Connect the client, any errors here are communicated by raising of the appropriate exception. Note
+  /// in some circumstances the broker will just disconnect us, see the spec about this, we however will
+  /// never send malformed messages.
+  try {
+    mqttSession.autoReconnect;
+    await mqttSession.connect();
+  } on NoConnectionException catch (e) {
+    // Raised by the client when connection fails.
+    logger.severe(' Mosquitto client exception - $e');
+    mqttSession.disconnect();
+    exit(-1);
+  } on SocketException catch (e) {
+    // Raised by the socket layer
+    logger.severe(' Mosquitto socket exception - $e');
+    mqttSession.disconnect();
+    exit(-1);
+  } on Exception catch (e) {
+    logger.severe(' Mosquitto unknown exception - $e');
+    mqttSession.disconnect();
+    exit(-1);
+  }
+
+  /// Check we are connected
+  if (mqttSession.connectionStatus!.state == MqttConnectionState.connected) {
+    logger.info(' Mosquitto client connected');
+  } else {
+    /// Use status here rather than state if you also want the broker return code.
+    logger.severe(' Mosquitto client connection failed - disconnecting, status is ${mqttSession.connectionStatus}');
+    mqttSession.disconnect();
+    exit(-1);
+  }
+
+  pubReceivePort.listen((message) {
+    mqttSession.publishMessage(mqttTopic, MqttQos.atMostOnce, builder.addString(message).payload!, retain: false);
+    builder.clear;
+    print('sent');
+  });
 }
