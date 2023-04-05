@@ -48,10 +48,9 @@ Future<void> snmpMqtt(List<String> args) async {
   String privateKeyFile;
   bool useCerts;
 
-  InternetAddress target;
-  final AtSignLogger _logger = AtSignLogger(' nautel ');
-  _logger.hierarchicalLoggingEnabled = true;
-  _logger.logger.level = Level.WARNING;
+  final AtSignLogger logger = AtSignLogger(' nautel ');
+  logger.hierarchicalLoggingEnabled = true;
+  logger.logger.level = Level.WARNING;
 
   var parser = ArgParser();
 // Args
@@ -107,9 +106,6 @@ Future<void> snmpMqtt(List<String> args) async {
     certFile = results['mqtt-cert'];
     privateKeyFile = results['mqtt-cert-private-key'];
 
-    var targetlist = await InternetAddress.lookup(mqttIP);
-    target = targetlist[0];
-
     if (results['key-file'] != null) {
       atsignFile = results['key-file'];
     } else {
@@ -121,15 +117,15 @@ Future<void> snmpMqtt(List<String> args) async {
       throw ('\n Unable to find .atKeys file : $atsignFile');
     }
   } catch (e) {
-    print(parser.usage);
-    print(e);
+    stderr.writeln(e);
+    stderr.writeln(parser.usage);
     exit(1);
   }
 
 // Now on to the @platform startup
   AtSignLogger.root_level = 'WARNING';
   if (results['verbose']) {
-    _logger.logger.level = Level.INFO;
+    logger.logger.level = Level.INFO;
 
     AtSignLogger.root_level = 'INFO';
   }
@@ -137,9 +133,9 @@ Future<void> snmpMqtt(List<String> args) async {
 // Keep an eye on connectivity and report failures if we see them
   ConnectivityListener().subscribe().listen((isConnected) {
     if (isConnected) {
-      _logger.warning('connection available');
+      logger.warning('Internet connection available');
     } else {
-      _logger.warning('connection lost');
+      logger.warning('Internet connection lost');
     }
   });
 
@@ -160,25 +156,25 @@ Future<void> snmpMqtt(List<String> args) async {
       mqttDeviceName,
       mqttPort,
       useCerts.toString(),
+      trustedCertsFile,
       certFile,
       privateKeyFile,
       mqttUsername,
       mqttPassword,
       mqttTopic,
+      results['verbose'].toString(),
       pubReceivePort.sendPort
     ],
   );
 
   //onboarding preference builder can be used to set onboardingService parameters
   AtOnboardingPreference atOnboardingConfig = AtOnboardingPreference()
-    //..qrCodePath = 'etc/qrcode_blueamateurbinding.png'
     ..hiveStoragePath = '$homeDirectory/.${nameSpace}mqtt/$fromAtsign/$mqttIP/storage'
     ..namespace = nameSpace
     ..downloadPath = '$homeDirectory/.${nameSpace}mqtt/files'
     ..isLocalStoreRequired = true
     ..commitLogPath = '$homeDirectory/.${nameSpace}mqtt/$fromAtsign/$mqttIP/storage/commitLog'
     ..fetchOfflineNotifications = false
-    //..cramSecret = '<your cram secret>';
     ..atKeysFilePath = atsignFile;
 
   AtOnboardingService onboardingService = AtOnboardingServiceImpl(fromAtsign, atOnboardingConfig);
@@ -188,12 +184,10 @@ Future<void> snmpMqtt(List<String> args) async {
   // var atClient = await onboardingService.getAtClient();
 
   AtClientManager atClientManager = AtClientManager.getInstance();
-  final builder = MqttClientPayloadBuilder();
   NotificationService notificationService = atClientManager.atClient.notificationService;
   String? atSign = AtClientManager.getInstance().atClient.getCurrentAtSign();
   notificationService.subscribe(regex: '$atSign:{"stationName":"$deviceName"', shouldDecrypt: true).listen(
       ((notification) async {
-    print(notification.toString());
     String? json = notification.key;
     if (mqttJsonWrapper == '') {
       json = json.replaceFirst('$atSign:', '');
@@ -201,23 +195,17 @@ Future<void> snmpMqtt(List<String> args) async {
       json = json.replaceFirst('$atSign:', '{"$mqttJsonWrapper":');
       json = '$json}';
     }
-    print(json);
     if (notification.from == '@$nameSpace') {
-      _logger.info('SNMP update recieved from ${notification.from} notification id : ${notification.id}');
-      _logger.info('Mosquitto client connected sending message: $json');
+      logger.info('SNMP update recieved from ${notification.from} notification id : ${notification.id}');
       try {
-        //await mqttSession.connect();
-        //mqttSession.publishMessage(mqttTopic, MqttQos.atMostOnce, builder.addString(json).payload!, retain: false);
         pubSendPort.send(json);
-        builder.clear();
-        print(json);
       } catch (e) {
-        _logger.info('Error sending mqtt message: $e');
+        logger.info('Error sending mqtt message: $e');
       }
     }
   }),
-      onError: (e) => _logger.severe('Notification Failed:$e'),
-      onDone: () => _logger.info('Notification listener stopped'));
+      onError: (e) => logger.severe('Notification Failed:$e'),
+      onDone: () => logger.info('Notification listener stopped'));
 }
 
 Future<void> mqttSetup(SendPort mySendPort) async {
@@ -230,15 +218,27 @@ Future<void> mqttSetup(SendPort mySendPort) async {
   String mqttDeviceName = message[2];
   String mqttPort = message[3];
   bool useCerts = message[4] == 'true';
-  String certFile = message[5];
-  String privateKeyFile = message[6];
-  String mqttUsername = message[7];
-  String mqttPassword = message[8];
-  String mqttTopic = message[9];
+  String trustedCertsFile = message[5];
+  String certFile = message[6];
+  String privateKeyFile = message[7];
+  String mqttUsername = message[8];
+  String mqttPassword = message[9];
+  String mqttTopic = message[10];
+  bool verbose = message[11] == 'true';
+
+  print(verbose);
 
   final AtSignLogger logger = AtSignLogger(' mqtt ');
   logger.hierarchicalLoggingEnabled = true;
   logger.logger.level = Level.WARNING;
+
+// Now on to the @platform startup
+  AtSignLogger.root_level = 'WARNING';
+  if (verbose) {
+    logger.logger.level = Level.INFO;
+    AtSignLogger.root_level = 'INFO';
+  }
+
   // Set up MQTT
   mqttSession = MqttServerClient.withPort(mqttIP, mqttDeviceName, int.parse(mqttPort), maxConnectionAttempts: 10);
   final builder = MqttClientPayloadBuilder();
@@ -246,8 +246,10 @@ Future<void> mqttSetup(SendPort mySendPort) async {
   mqttSession.setProtocolV311();
   mqttSession.secure = mqttTls;
   if (useCerts) {
-    //mqttSession.securityContext.setTrustedCertificates(trustedCertsFile);
-    //mqttSession.securityContext.setClientAuthorities(trustedCertsFile);
+    if (trustedCertsFile != '') {
+      mqttSession.securityContext.setTrustedCertificates(trustedCertsFile);
+      mqttSession.securityContext.setClientAuthorities(trustedCertsFile);
+    }
     mqttSession.securityContext.useCertificateChain(certFile);
     mqttSession.securityContext.usePrivateKey(privateKeyFile);
   }
@@ -281,24 +283,33 @@ Future<void> mqttSetup(SendPort mySendPort) async {
   /// Connect the client, any errors here are communicated by raising of the appropriate exception. Note
   /// in some circumstances the broker will just disconnect us, see the spec about this, we however will
   /// never send malformed messages.
-  try {
-    mqttSession.autoReconnect;
-    await mqttSession.connect();
-  } on NoConnectionException catch (e) {
-    // Raised by the client when connection fails.
-    logger.severe(' Mosquitto client exception - $e');
-    mqttSession.disconnect();
-    exit(-1);
-  } on SocketException catch (e) {
-    // Raised by the socket layer
-    logger.severe(' Mosquitto socket exception - $e');
-    mqttSession.disconnect();
-    exit(-1);
-  } on Exception catch (e) {
-    logger.severe(' Mosquitto unknown exception - $e');
-    mqttSession.disconnect();
-    exit(-1);
+  mqttConnect(bool exitOnFail) async {
+    try {
+      await mqttSession.connect();
+    } on NoConnectionException catch (e) {
+      // Raised by the client when connection fails.
+      logger.severe(' Mosquitto client exception - $e');
+      mqttSession.disconnect();
+      if (exitOnFail) {
+        exit(-1);
+      }
+    } on SocketException catch (e) {
+      // Raised by the socket layer
+      logger.severe(' Mosquitto socket exception - $e');
+      mqttSession.disconnect();
+      if (exitOnFail) {
+        exit(-1);
+      }
+    } on Exception catch (e) {
+      logger.severe(' Mosquitto unknown exception - $e');
+      mqttSession.disconnect();
+      if (exitOnFail) {
+        exit(-1);
+      }
+    }
   }
+
+  await mqttConnect(true);
 
   /// Check we are connected
   if (mqttSession.connectionStatus!.state == MqttConnectionState.connected) {
@@ -310,9 +321,19 @@ Future<void> mqttSetup(SendPort mySendPort) async {
     exit(-1);
   }
 
-  pubReceivePort.listen((message) {
-    mqttSession.publishMessage(mqttTopic, MqttQos.atMostOnce, builder.addString(message).payload!, retain: false);
-    builder.clear;
-    print('sent');
+  pubReceivePort.listen((message) async {
+    /// Check we are connected\
+    /// If so send if not reconnect
+    if (mqttSession.connectionStatus!.state == MqttConnectionState.connected) {
+      builder.clear();
+      logger.info('Mosquitto client connected sending message: $message');
+      mqttSession.publishMessage(mqttTopic, MqttQos.atMostOnce, builder.addString(message).payload!, retain: false);
+    } else {
+      logger.info("MQTT Sesssion disconnected reconnecting");
+      mqttSession.disconnect();
+      // Lets wait for things to change and retry
+      //await Future.delayed(Duration(seconds: 10));
+      await mqttConnect(false);
+    }
   });
 }
