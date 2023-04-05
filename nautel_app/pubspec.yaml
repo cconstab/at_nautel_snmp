@@ -35,7 +35,7 @@ flutter:
   assets:
     - .env
 
-dependency_overrides:
+# dependency_overrides:
 
 
 icons_launcher:
