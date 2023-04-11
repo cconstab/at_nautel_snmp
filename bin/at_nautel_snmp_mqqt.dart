@@ -323,7 +323,6 @@ Future<void> mqttSetup(SendPort mySendPort) async {
 
   await mqttConnect(true);
 
-  bool displayNotifications = true;
   pubReceivePort.listen((message) async {
     /// Check we are connected\
     /// If so send if not reconnect
@@ -332,15 +331,7 @@ Future<void> mqttSetup(SendPort mySendPort) async {
       logger.info('Mosquitto client connected sending message: $message');
       mqttSession.publishMessage(mqttTopic, MqttQos.atMostOnce, builder.addString(message).payload!, retain: false);
     } else {
-      if (displayNotifications) {
-        logger.warning("MQTT Sesssion disconnected, trying to reconnect in 10 seconds");
-      }
-      mqttSession.disconnect();
-      displayNotifications = false;
-      // Lets wait for things to change and retry
-      await Future.delayed(Duration(seconds: 10));
-      displayNotifications = true;
-      await mqttConnect(false);
+      logger.warning("Mqtt session no longer connected, message not sent, mqtt session will try to reconnect");
     }
   });
 }
