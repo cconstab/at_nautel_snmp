@@ -307,20 +307,23 @@ Future<void> mqttSetup(SendPort mySendPort) async {
         exit(-1);
       }
     }
+
+    /// Check we are connected
+    if (mqttSession.connectionStatus!.state == MqttConnectionState.connected) {
+      logger.info(' Mosquitto client connected');
+    } else {
+      /// Use status here rather than state if you also want the broker return code.
+      logger.severe(' Mosquitto client connection failed - disconnecting, status is ${mqttSession.connectionStatus}');
+      mqttSession.disconnect();
+      if (exitOnFail) {
+        exit(-1);
+      }
+    }
   }
 
   await mqttConnect(true);
 
-  /// Check we are connected
-  if (mqttSession.connectionStatus!.state == MqttConnectionState.connected) {
-    logger.info(' Mosquitto client connected');
-  } else {
-    /// Use status here rather than state if you also want the broker return code.
-    logger.severe(' Mosquitto client connection failed - disconnecting, status is ${mqttSession.connectionStatus}');
-    mqttSession.disconnect();
-    exit(-1);
-  }
-
+  bool displayNotifications = true;
   pubReceivePort.listen((message) async {
     /// Check we are connected\
     /// If so send if not reconnect
@@ -329,10 +332,14 @@ Future<void> mqttSetup(SendPort mySendPort) async {
       logger.info('Mosquitto client connected sending message: $message');
       mqttSession.publishMessage(mqttTopic, MqttQos.atMostOnce, builder.addString(message).payload!, retain: false);
     } else {
-      logger.info("MQTT Sesssion disconnected reconnecting");
+      if (displayNotifications) {
+        logger.warning("MQTT Sesssion disconnected, trying to reconnect in 10 seconds");
+      }
       mqttSession.disconnect();
+      displayNotifications = false;
       // Lets wait for things to change and retry
-      //await Future.delayed(Duration(seconds: 10));
+      await Future.delayed(Duration(seconds: 10));
+      displayNotifications = true;
       await mqttConnect(false);
     }
   });
