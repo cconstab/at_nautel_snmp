@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 
@@ -129,12 +130,23 @@ Future<void> snmpMqtt(List<String> args) async {
           regex: '$atSign:{"stationName":"$deviceName"', shouldDecrypt: true)
       .listen(((notification) async {
     String? json = notification.key;
-
+    json = json.replaceFirst("$fromAtsign:", "");
     if (notification.from == '@$nameSpace') {
       logger.info(
           'SNMP update recieved from ${notification.from} notification id : ${notification.id}');
       try {
         print(json);
+        final obj = jsonDecode(json) as Map<String,dynamic>;
+        final String fullpost = 
+  "\"$cloudUrl/influxdb/v1/write?db=test&token=$cloudToken&precision=u\" --user \"root:taosdata\" --data-binary \"measurement,stationName=${obj['stationName']},frequency=${obj['frequency'].toString().replaceAll(" Mhz", "")},ip=${obj['ip']},fanspeed=${obj['fanspeed']},heatsinktemp=${obj['heatsinktemp']},peakmodulation=${obj['peakmodulation']},poweroutput=${obj['poweroutput']},powerreflected=${obj['powerreflected']},swr=${obj['swr']}\"";
+        final String post = "$cloudUrl/influxdb/v1/write?db=test&token=$cloudToken&precision=ms";
+        final String dataPost = "\"measurement,stationName=${obj['stationName']},frequency=${obj['frequency'].toString().replaceAll(" Mhz", "")},ip=${obj['ip']} fanspeed=${obj['fanspeed']},heatsinktemp=${obj['heatsinktemp']},peakmodulation=${obj['peakmodulation']},poweroutput=${obj['poweroutput']},powerreflected=${obj['powerreflected']},swr=${obj['swr']} ${DateTime.now().millisecondsSinceEpoch} \"";
+        print(post); 
+        print(dataPost);
+        print ("'curl --request POST $post --user root:taosdata --data-binary $dataPost");
+                var process = await Process.run('curl', ['--request', 'POST', post, '--user','root:taosdata', '--data-binary', dataPost]);
+        print(process.stdout);
+        print(process.stderr);
       } catch (e) {
         logger.info('Error printing message: $e');
       }
