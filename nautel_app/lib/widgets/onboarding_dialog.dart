@@ -1,6 +1,5 @@
 import 'package:auto_size_text/auto_size_text.dart';
 
-import 'package:at_client_mobile/at_client_mobile.dart';
 import 'package:at_onboarding_flutter/at_onboarding_flutter.dart';
 import 'package:nautel_app/main.dart';
 import 'package:nautel_app/screens/home_screen.dart';

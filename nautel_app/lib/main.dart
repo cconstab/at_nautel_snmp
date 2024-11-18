@@ -6,12 +6,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:nautel_app/screens/onboarding_screen.dart';
 import 'screens/home_screen.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'package:path_provider/path_provider.dart';
 //    show getApplicationSupportDirectory;
 import 'package:window_manager/window_manager.dart';
 
 Future<void> main() async {
+  await dotenv.load(fileName: ".env");
   // Must add this line.
   WidgetsFlutterBinding.ensureInitialized();
   if (kIsWeb) {
@@ -73,7 +75,7 @@ class _MyAppState extends State<MyApp> {
     }
     return MaterialApp(
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(backgroundColor: Colors.blue, primarySwatch: Colors.green),
+        theme: ThemeData(colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.green).copyWith(surface: Colors.blue)),
         // * The onboarding screen (first screen)
         routes: {
           HomeScreen.id: (_) => HomeScreen(),
