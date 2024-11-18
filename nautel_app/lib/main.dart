@@ -73,7 +73,7 @@ class _MyAppState extends State<MyApp> {
     }
     return MaterialApp(
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(backgroundColor: Colors.blue, primarySwatch: Colors.green),
+        theme: ThemeData(colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.green).copyWith(background: Colors.blue)),
         // * The onboarding screen (first screen)
         routes: {
           HomeScreen.id: (_) => HomeScreen(),
